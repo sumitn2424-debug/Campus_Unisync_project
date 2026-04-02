@@ -1,41 +1,24 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
-import Navbar from './components/Navbar';
-import Auth from './pages/Auth';
-import Dashboard from './pages/Dashboard';
-import CreatePost from './pages/CreatePost';
-import Store from './pages/Store';
-import Chat from './pages/Chat';
-import Feedback from './pages/Feedback';
-import PostMessage from './components/post';
+import React from 'react'
+import axios from 'axios'
 
-const ProtectedRoute = ({ children }) => {
-  const { user } = useAuth();
-  if (!user) return <Navigate to="/" replace />;
-  return children;
-};
 
-function App() {
+const App = () => {
+  const fetchData = async () => {
+    try {
+      const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/data/fetchData`, { withCredentials: true });
+      console.log(res.data);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
+  }
   return (
-    <Router>
-      <PostMessage/>
-      {/* <AuthProvider>
-        <div className="min-h-screen pt-4 pb-12">
-          <Navbar />
-          <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <Routes>
-              <Route path="/" element={<Auth />} />
-              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-              <Route path="/post" element={<ProtectedRoute><CreatePost /></ProtectedRoute>} />
-              <Route path="/store" element={<ProtectedRoute><Store /></ProtectedRoute>} />
-              <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
-              <Route path="/feedback" element={<ProtectedRoute><Feedback /></ProtectedRoute>} />
-            </Routes>
-          </main>
-        </div>
-      </AuthProvider> */}
-    </Router>
-  );
+    <div>
+      button to fetch data 
+      <button
+      className='text white font-bold' 
+       onClick={fetchData}>Fetch Data</button>
+    </div>
+  )
 }
 
-export default App;
+export default App
