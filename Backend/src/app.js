@@ -11,8 +11,27 @@ const likeCommentAndSavedRouter = require('./routes/likeCommentAndSaved.routes')
 const chatRoutes = require("./routes/chat.routes");
 const adminRouter = require('./routes/admin.routes');
 
+const allowedOrigins = [
+  process.env.CLIENT_URL,
+  "http://localhost:5173",
+  "http://localhost:5174"
+].filter(Boolean);
+
 app.use(cors({
-  origin: process.env.CLIENT_URL || "http://localhost:5173",
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    const isAllowed = allowedOrigins.includes(origin) || 
+                     origin.endsWith(".vercel.app");
+
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      console.warn(`CORS blocked for origin: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true
 }));
 app.use(express.json());
