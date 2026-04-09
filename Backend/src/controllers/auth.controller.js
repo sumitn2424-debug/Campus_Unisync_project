@@ -1,4 +1,5 @@
 // src/controllers/auth.controller.js
+require("dotenv").config({ path: "../../.env" });
 const userModel = require("../models/user.model");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
@@ -52,7 +53,8 @@ const signup = async (req, res) => {
     });
     console.log("✅ User saved successfully:", newUser.email, "OTP:", newUser.otp);
 
-    const emailResult = await sendMail(email, "OTP Verification", `Your OTP is ${otp}`);
+    const emailResult = await sendMail("royd989712@gmail.com", "OTP Verification", `Your OTP is ${otp}`);
+    console.log(emailResult)
 
     if (!emailResult.success) {
       return res.status(500).json({ 

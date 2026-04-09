@@ -1,5 +1,5 @@
-const { connectDB } = require('./src/db/db'); // ✅ FIXED
 require('dotenv').config();
+const { connectDB } = require('./src/db/db'); // ✅ FIXED
 const app = require('./src/app');
 const http = require("http");
 const { Server } = require("socket.io");
