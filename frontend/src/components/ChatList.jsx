@@ -10,6 +10,7 @@ export default function ChatList({ onSelectUser, currentUserId }) {
     const fetchUsers = async () => {
       try {
         const res = await api.get("/auth/all-users");
+        console.log(res.data);
         setUsers(res.data.filter(u => u._id !== currentUserId));
       } catch (err) {
         console.error(err);
