@@ -9,8 +9,8 @@ if (dns.setDefaultResultOrder) {
 
 const transporter = nodemailer.createTransport({
   host: "smtp.gmail.com",
-  port: 587,
-  secure: false,
+  port: 465,
+  secure: true,
   family: 4, // Force IPv4
   connectionTimeout: 5000, 
   logger: true, // Enable logging
