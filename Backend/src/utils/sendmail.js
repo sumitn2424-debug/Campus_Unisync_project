@@ -2,40 +2,34 @@
 const nodemailer = require("nodemailer");
 const dns = require("dns");
 
-// Force Node.js to prioritize IPv4 over IPv6
+// Force Node.js to prioritize IPv4 (still good practice on cloud)
 if (dns.setDefaultResultOrder) {
   dns.setDefaultResultOrder("ipv4first");
 }
 
 const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 465,
-  secure: true,
-  family: 4, // Force IPv4
-  connectionTimeout: 5000, 
-  logger: true, // Enable logging
-  debug: true,  // Include SMTP traffic in logs
+  host: "smtp-relay.brevo.com",
+  port: 587,
+  secure: false, // TLS
   auth: {
-    user: process.env.EMAIL,
-    pass: process.env.APP_PASSWORD,
+    user: process.env.BREVO_USER,
+    pass: process.env.BREVO_KEY,
   },
 });
 
 const sendMail = async (to, subject, text) => {
   try {
     const info = await transporter.sendMail({
-      from: process.env.EMAIL,
+      from: process.env.BREVO_USER,
       to,
       subject,
       text,
     });
-    console.log("✅ Email sent successfully:", info.messageId);
+    console.log("✅ Email sent via Brevo:", info.messageId);
     return { success: true, info };
   } catch (error) {
-    console.error("❌ SendMail Error Details:");
-    console.error("Code:", error.code);
+    console.error("❌ Brevo SMTP Error:");
     console.error("Message:", error.message);
-    console.error("Check your EMAIL and APP_PASSWORD environment variables on Render.");
     return { success: false, error: error.message };
   }
 };
