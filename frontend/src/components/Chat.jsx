@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { socket } from "../socket";
+import api from "../services/api";
 
 export default function Chat({ currentUserId, friendId, username }) {
   const [messages, setMessages] = useState([]);
@@ -9,7 +10,18 @@ export default function Chat({ currentUserId, friendId, username }) {
   useEffect(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), [messages]);
 
   useEffect(() => {
-    if (!currentUserId) return;
+    if (!currentUserId || !friendId) return;
+
+    const fetchMessages = async () => {
+      try {
+        const res = await api.get(`/chat/messages?senderId=${currentUserId}&receiverId=${friendId}`);
+        setMessages(res.data);
+      } catch (err) {
+        console.error("Error fetching messages:", err);
+      }
+    };
+    fetchMessages();
+
     socket.emit("user_connected", currentUserId);
 
     const handleReceive = msg => {
@@ -27,24 +39,53 @@ export default function Chat({ currentUserId, friendId, username }) {
     if (!message.trim()) return;
     const msgObj = { senderId: currentUserId, receiverId: friendId, text: message };
     socket.emit("send_message", msgObj);
-    setMessages(prev => [...prev, msgObj]);
     setMessage("");
   };
 
   return (
-    <div className="flex flex-col h-full border p-3 rounded max-w-md mx-auto">
-      <div className="border-b mb-2 pb-2"><h3>{username}</h3></div>
-      <div className="flex-1 overflow-y-auto border p-2">
+    <div className="flex flex-col h-[50vh] max-w-md mx-auto bg-white shadow-lg rounded-lg overflow-hidden">
+      {/* HEADER */}
+      <div className="bg-blue-500 text-white p-3 flex items-center justify-between">
+        <h3 className="font-semibold text-lg">{username}</h3>
+      </div>
+
+      {/* MESSAGE AREA */}
+      <div className="flex-1 overflow-y-auto p-3 space-y-2 bg-gray-100">
         {messages.map((m, i) => (
-          <div key={i} className={m.senderId === currentUserId ? "text-right" : ""}>
-            <span className="bg-gray-200 px-3 py-1 rounded inline-block my-1">{m.text}</span>
+          <div 
+            key={i} 
+            className={`flex ${m.senderId === currentUserId ? "justify-end" : "justify-start"}`}
+          >
+            <span 
+              className={`px-3 py-2 rounded-lg max-w-[70%] break-words ${
+                m.senderId === currentUserId 
+                ? "bg-blue-500 text-white rounded-br-none" 
+                : "bg-gray-200 text-gray-800 rounded-bl-none"
+              }`}
+            >
+              {m.text}
+            </span>
           </div>
         ))}
         <div ref={messagesEndRef} />
       </div>
-      <div className="flex mt-2">
-        <input className="flex-1 border p-2" value={message} onChange={e => setMessage(e.target.value)} />
-        <button onClick={handleSend} className="bg-blue-500 text-white px-3 ml-2">Send</button>
+
+      {/* INPUT AREA */}
+      <div className="p-2 border-t flex items-center bg-white">
+        <input
+          type="text"
+          placeholder="Type a message..."
+          className="flex-1 border rounded-full px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          value={message}
+          onChange={e => setMessage(e.target.value)}
+          onKeyDown={e => e.key === "Enter" && handleSend()}
+        />
+        <button
+          onClick={handleSend}
+          className="ml-2 bg-blue-500 text-white rounded-full px-3 py-2 shadow-md hover:bg-blue-600"
+        >
+          Send
+        </button>
       </div>
     </div>
   );
