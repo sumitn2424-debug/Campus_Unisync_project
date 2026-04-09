@@ -18,11 +18,20 @@ const signup = async (req, res) => {
     }
 
     const existingUser = await userModel.findOne({ $or: [{ email }, { username }] });
-    if (existingUser) {
-      if (username == existingUser.username) {
-        return res.status(400).json({ message: "Username already taken by anouther user" });
+    
+    // If user exists and is already verified, block them
+    if (existingUser && existingUser.isVerified) {
+      if (username === existingUser.username) {
+        return res.status(400).json({ message: "Username already taken by another user" });
       }
       return res.status(400).json({ message: "User already exists" });
+    }
+
+    // If user exists but is NOT verified, we will delete the old unverified attempt 
+    // to allow a fresh start with the same email/username
+    if (existingUser && !existingUser.isVerified) {
+      console.log("Replacing unverified user:", existingUser.email);
+      await userModel.deleteOne({ _id: existingUser._id });
     }
 
     if (password.length <= 5) {

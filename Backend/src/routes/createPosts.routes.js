@@ -7,5 +7,5 @@ const createPostMiddleware = require('../middleware/createPosts.middleware');
 const upload = multer({ storage: multer.memoryStorage() });
 
 router.post("/create-Post", upload.single("image"), createPostMiddleware, Post.createPost);
-router.delete("/delete-Post", createPostMiddleware, Post.deletePost);
+router.delete("/delete-Post/:id", createPostMiddleware, Post.deletePost);
 module.exports = router;

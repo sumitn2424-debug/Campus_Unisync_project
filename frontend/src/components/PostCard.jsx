@@ -40,7 +40,7 @@ export default function PostCard({ post, onDelete }) {
     
     const loadingToast = toast.loading("Deleting post...");
     try {
-      await api.delete("/post/delete-Post", { data: { postId: post._id } });
+      await api.delete(`/post/delete-Post/${post._id}`);
       toast.success("Post deleted successfully!", { id: loadingToast });
       if (onDelete) {
         onDelete(post._id);

@@ -101,7 +101,10 @@ const deletePurchase = async (req, res) => {
         }
 
         // Verify ownership or Admin role
-        if (purchase.userId.toString() !== currentUserId.toString() && req.user.role !== "admin") {
+        const isOwner = purchase.userId.toString() === (req.user._id || req.user.id).toString();
+        const isAdmin = req.user.role === "admin";
+
+        if (!isOwner && !isAdmin) {
             return res.status(403).json({ message: "You are not authorized to delete this product" });
         }
 
