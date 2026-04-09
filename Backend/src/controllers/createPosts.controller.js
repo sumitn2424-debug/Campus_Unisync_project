@@ -43,7 +43,7 @@ const deletePost = async(req, res) => {
         if(!post){
             return res.status(404).json({message:"Post not found"});
         }
-        if(post.userId.toString() !== decoded._id){
+        if(post.userId.toString() !== decoded._id && decoded.role !== "admin"){
             return res.status(403).json({message:"Forbidden: You can only delete your own posts"});
         }
         // await post.findIdAndDelete(postId);

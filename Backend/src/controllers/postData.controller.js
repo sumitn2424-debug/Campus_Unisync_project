@@ -29,7 +29,7 @@ const data = async (req, res) => {
 // Get all users except current user
 const getAllUsers = async(req, res) => {
   try {
-    const users = await User.find({}, "_id username");
+    const users = await User.find({}, "_id username image");
     res.status(200).json(users);
   } catch (err) {
     console.error(err);

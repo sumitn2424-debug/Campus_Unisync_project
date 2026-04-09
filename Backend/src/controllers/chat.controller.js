@@ -18,4 +18,37 @@ const getMessages = async (req, res) => {
   }
 };
 
-module.exports = { getMessages };
+const markAsRead = async (req, res) => {
+  try {
+    const { senderId, receiverId } = req.body;
+    await Message.updateMany(
+      { senderId, receiverId, isRead: false },
+      { $set: { isRead: true } }
+    );
+    res.json({ message: "Messages marked as read" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+const getUnreadCounts = async (req, res) => {
+  try {
+    const { userId } = req.query;
+    const unreadMessages = await Message.aggregate([
+      { $match: { receiverId: userId, isRead: false } },
+      { $group: { _id: "$senderId", count: { $sum: 1 } } }
+    ]);
+    
+    // Convert to a simple object { senderId: count }
+    const counts = {};
+    unreadMessages.forEach(item => {
+      counts[item._id] = item.count;
+    });
+    
+    res.json(counts);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+module.exports = { getMessages, markAsRead, getUnreadCounts };

@@ -143,6 +143,37 @@ export default function AuthUI() {
     setTimer(60) // reset timer 
   }
 
+  /* ================= FORGOT PASSWORD ================= */
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetOtp, setResetOtp] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+
+  const handleForgotPasswordSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await api.post("/auth/forget-password", { email: resetEmail });
+      toast.success(res.data.message || "OTP sent to your email");
+      setMode("reset-password");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to send OTP");
+    }
+  };
+
+  const handleResetPasswordSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await api.post("/auth/reset-password", { 
+        email: resetEmail, 
+        otp: resetOtp, 
+        newPassword 
+      });
+      toast.success(res.data.message || "Password reset successful!");
+      setMode("login");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to reset password");
+    }
+  };
+
 
   
   return (
@@ -182,15 +213,23 @@ export default function AuthUI() {
                 Login
               </button>
 
-              <p className="text-sm text-center">
-                Don't have an account?{" "}
-                <span
-                  className="text-indigo-600 cursor-pointer"
-                  onClick={() => setMode("signup")}
+              <div className="flex justify-between items-center px-1">
+                <p className="text-sm text-center">
+                  Don't have an account?{" "}
+                  <span
+                    className="text-indigo-600 cursor-pointer font-medium"
+                    onClick={() => setMode("signup")}
+                  >
+                    Sign up
+                  </span>
+                </p>
+                <span 
+                  className="text-xs text-indigo-500 cursor-pointer hover:underline"
+                  onClick={() => setMode("forgot-password")}
                 >
-                  Sign up
+                  Forgot Password?
                 </span>
-              </p>
+              </div>
             </div>
           </form>
         )}
@@ -277,6 +316,72 @@ export default function AuthUI() {
                   {message==="" ? "Login" : ""}
                 </span>
               </p>
+            </div>
+          </form>
+        )}
+
+        {/* ================= FORGOT PASSWORD ================= */}
+        {mode === "forgot-password" && (
+          <form onSubmit={handleForgotPasswordSubmit}>
+            <div className="space-y-4">
+              <p className="text-sm text-center text-gray-600">
+                Enter your registered email to receive a reset OTP.
+              </p>
+              <input
+                type="email"
+                required
+                placeholder="Registered Email"
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+                className="w-full border p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              />
+              <button type="submit" className="w-full bg-indigo-500 text-white py-2 rounded-lg hover:bg-indigo-600 transition">
+                Send OTP
+              </button>
+              <button 
+                type="button" 
+                onClick={() => setMode("login")}
+                className="w-full text-sm text-gray-500 hover:text-gray-700"
+              >
+                Back to Login
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* ================= RESET PASSWORD ================= */}
+        {mode === "reset-password" && (
+          <form onSubmit={handleResetPasswordSubmit}>
+            <div className="space-y-3">
+              <p className="text-sm text-center text-gray-600">
+                Enter the OTP sent to <b>{resetEmail}</b> and your new password.
+              </p>
+              <input
+                type="text"
+                required
+                placeholder="6-digit OTP"
+                value={resetOtp}
+                onChange={(e) => setResetOtp(e.target.value)}
+                className="w-full border p-2 rounded-lg text-center tracking-widest focus:ring-2 focus:ring-indigo-400"
+              />
+              <input
+                type="password"
+                required
+                placeholder="New Password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-indigo-400"
+              />
+              <button type="submit" className="w-full bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 transition">
+                Reset Password
+              </button>
+              <button 
+                type="button" 
+                onClick={() => setMode("forgot-password")}
+                className="w-full text-sm text-gray-500 hover:text-gray-700 font-medium"
+              >
+                ⬅ Resend OTP
+              </button>
             </div>
           </form>
         )}

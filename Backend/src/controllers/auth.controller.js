@@ -112,13 +112,14 @@ const verifyOtp = async (req, res) => {
       username:user.username,
       email: user.email,
       image: user.image,
-      isVerified: user.isVerified
+      isVerified: user.isVerified,
+      role: user.role
     }, process.env.JWT_SECRET);
 
     res.cookie("token", token, {
       httpOnly: true,
-      secure: false,
-      sameSite: "strict",
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7days
     });
 
@@ -162,13 +163,14 @@ const login = async (req, res) => {
       email: user.email,
       username: user.username,
       image: user.image,
-      isVerified: user.isVerified
+      isVerified: user.isVerified,
+      role: user.role
     }, process.env.JWT_SECRET);
 
     res.cookie("token", token, {
       httpOnly: true,
-      secure: false,
-      sameSite: "strict",
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7days
     });
     res.json({
@@ -236,8 +238,8 @@ const logout = (req, res) => {
 
     res.clearCookie("token", {
       httpOnly: true,
-      sameSite: "strict",
-      secure: false,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
     });
 
     res.status(200).json({

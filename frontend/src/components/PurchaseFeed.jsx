@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../services/api";
 import { useNavigate } from "react-router-dom";
 
 export default function PurchaseFeed() {
@@ -8,9 +8,7 @@ export default function PurchaseFeed() {
 
     const fetchProducts = async () => {
         try {
-            const res = await axios.get("http://localhost:5001/api/purchase/products", {
-                withCredentials: true,
-            });
+            const res = await api.get("/purchase/products");
             setProducts(res.data.data);
         } catch (err) {
             console.error(err);
@@ -22,15 +20,21 @@ export default function PurchaseFeed() {
     }, []);
 
     // 🔥 Handle Chat Button
-    const handleChat = (user) => {
-        if (!user) {
+    const handleChat = (item) => {
+        if (!item.userId) {
             console.error("❌ User not found");
             return;
         }
-        navigate("/message", {
+        navigate("/Message", {
             state: {
-                userId: user._id,
-                username: user.username,
+                userId: item.userId._id,
+                username: item.userId.username,
+                image: item.userId.image,
+                sharedPost: {
+                  title: item.productName,
+                  image: item.productImage,
+                  price: item.price
+                }
             },
         });
     };
@@ -66,7 +70,7 @@ export default function PurchaseFeed() {
                         {/* ✅ Chat Button */}
                         <button
                             disabled={!item.userId}
-                            onClick={() => handleChat(item.userId)}
+                            onClick={() => handleChat(item)}
                             className={`mt-4 px-4 py-2 rounded ${item.userId ? "bg-blue-500 text-white" : "bg-gray-300 cursor-not-allowed"
                                 }`}
                         >

@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 
-const { createPurchase, showPurchase } = require("../controllers/purchase.controller");
+const { createPurchase, showPurchase, deletePurchase } = require("../controllers/purchase.controller");
 const authUser = require("../middleware/authData.middleware");
 
 const multer = require("multer");
@@ -24,5 +24,6 @@ const upload = multer({
 
 router.post("/product", authUser, upload.single("image"), createPurchase);
 router.get("/products", authUser, showPurchase);
+router.delete("/product/:id", authUser, deletePurchase);
 
 module.exports = router;

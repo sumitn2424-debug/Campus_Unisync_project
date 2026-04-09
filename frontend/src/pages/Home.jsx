@@ -45,14 +45,16 @@ export default function Home() {
       <PostProvider>
         
         {posts.map((post, index) => {
+          const handleDelete = (deletedId) => setPosts(posts.filter(p => p._id !== deletedId));
+          
           if (posts.length === index + 1) {
             return (
               <div ref={lastPostRef} key={post._id}>
-                <PostCard post={post} />
+                <PostCard post={post} onDelete={handleDelete} />
               </div>
             );
           }
-          return <PostCard key={post._id} post={post} />;
+          return <PostCard key={post._id} post={post} onDelete={handleDelete} />;
         })}
 
         {loading && <Loader />}

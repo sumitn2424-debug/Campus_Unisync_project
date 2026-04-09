@@ -9,6 +9,8 @@ import Marketplace from "../pages/MarketPlace";
 import CreateUserPost from "../pages/CreateUserPost";
 import CreateProductPost from "../pages/CreateProductPost";
 import NotFound from "../pages/NotFound";
+import AdminPanel from "../pages/AdminPanel";
+import AdminRoute from "../components/AdminRoute";
 
 export const AppRoutes = () => {
     return (
@@ -17,6 +19,11 @@ export const AppRoutes = () => {
             <Route path="/" element={
                     <Auth />
             } />
+
+            <Route element={<AdminRoute />}>
+                <Route path="/admin" element={<AdminPanel />} />
+            </Route>
+
             <Route path="/home" element={
                 <ProtectedRoutes>
                     <Home />

@@ -57,14 +57,17 @@ const createPurchase = async (req, res) => {
     }
 };
 
-// ✅ Show product list (pagination)
+// ✅ Show product list (pagination & filtering)
 const showPurchase = async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const page = parseInt(req.query.page) || 1;
+    const userId = req.query.userId; // Filter by user if provided
 
     try {
+        const query = userId ? { userId } : {};
+
         const purchases = await purchaseModel
-            .find()
+            .find(query)
             .populate("userId", "username image")
             .sort({ createdAt: -1 })
             .skip((page - 1) * limit)
@@ -85,7 +88,37 @@ const showPurchase = async (req, res) => {
     }
 };
 
+// ✅ Delete product post
+const deletePurchase = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const currentUserId = req.user._id;
+
+        const purchase = await purchaseModel.findById(id);
+
+        if (!purchase) {
+            return res.status(404).json({ message: "Product not found" });
+        }
+
+        // Verify ownership or Admin role
+        if (purchase.userId.toString() !== currentUserId.toString() && req.user.role !== "admin") {
+            return res.status(403).json({ message: "You are not authorized to delete this product" });
+        }
+
+        await purchaseModel.findByIdAndDelete(id);
+
+        res.status(200).json({
+            message: "Product deleted successfully",
+        });
+
+    } catch (err) {
+        console.error("Delete purchase error:", err);
+        res.status(500).json({ message: err.message });
+    }
+};
+
 module.exports = {
     createPurchase,
     showPurchase,
+    deletePurchase,
 };

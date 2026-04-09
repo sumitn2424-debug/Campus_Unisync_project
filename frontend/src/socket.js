@@ -2,6 +2,9 @@
 import { io } from "socket.io-client";
 
 const getSocketUrl = () => {
+  if (import.meta.env.VITE_SOCKET_URL) {
+    return import.meta.env.VITE_SOCKET_URL;
+  }
   if (import.meta.env.VITE_BACKEND_SOCKET_URL) {
     return import.meta.env.VITE_BACKEND_SOCKET_URL;
   }

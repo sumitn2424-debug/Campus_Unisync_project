@@ -1,60 +1,85 @@
 // PostCard.jsx
 import  { useState } from "react";
-import { FaHeart, FaRegHeart, FaComment, FaShare, FaBookmark, FaRegBookmark } from "react-icons/fa";
+import { FaHeart, FaRegHeart, FaComment, FaShare, FaBookmark, FaRegBookmark, FaTrash } from "react-icons/fa";
 import usePost from "../hooks/usePost";
 import { socket } from "../socket";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
+import api from "../services/api";
+import toast from "react-hot-toast";
 
-export default function PostCard({ post }) {
+export default function PostCard({ post, onDelete }) {
   const navigate = useNavigate();
+  const { userInformation } = useAuth();
   const { likePost , savePost} = usePost();
+  
   // Button states
   const [liked, setLiked] = useState(false);
   const [commented, setCommented] = useState(false);
   const [shared, setShared] = useState(false);
   const [saved, setSaved] = useState(false);
-console.log(post._id)
+
   const handleLike = async () => {
     const res = await likePost(post._id);
-    console.log(res.data)
     if(!res) return ;
     setLiked(res.isLiked);
   };
 
   const handleSave = async () => {
     const res = await savePost(post._id);
-    console.log(res.data)
-    // console.log(res.data.isSaved)
     if(!res) return ;
     setSaved(res.data.isSaved);
   };
 
   const handleShare = () => {
-    navigate("Message");
+    navigate("/Message", { state: { sharedPost: post } });
   };
-  const sharePost = () => {
-    socket.emit("sharePost", {
-      toUserId: "FRIEND_ID",
-      post
-    });
+
+  const handleDelete = async () => {
+    if (!window.confirm("Are you sure you want to delete this post?")) return;
+    
+    const loadingToast = toast.loading("Deleting post...");
+    try {
+      await api.delete("/post/delete-Post", { data: { postId: post._id } });
+      toast.success("Post deleted successfully!", { id: loadingToast });
+      if (onDelete) {
+        onDelete(post._id);
+      } else {
+        window.location.reload();
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.message || "Failed to delete post", { id: loadingToast });
+    }
   };
 
   return (
-    <div className="bg-white rounded-xl shadow mb-6 w-full max-w-xl mx-auto">
+    <div className="bg-white rounded-xl shadow mb-6 w-full max-w-xl mx-auto overflow-hidden">
       {/* Profile section */}
-      <div className="flex items-center p-3">
-        <div className="w-14 h-14 rounded-full bg-gradient-to-tr from-pink-500 to-yellow-500 p-1 flex-shrink-0">
-          <div className="bg-white w-full h-full rounded-full overflow-hidden">
+      <div className="flex items-center justify-between p-3">
+        <div className="flex items-center">
+          <div className="w-12 h-12 rounded-full flex-shrink-0 border border-gray-200">
             <img
               src={post.userId?.image || "https://via.placeholder.com/150"}
               alt={post.userId?.username || "Unknown User"}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover rounded-full"
             />
           </div>
+          <div className="ml-3 font-semibold text-gray-800">
+            {post.userId?.username || "Unknown User"}
+          </div>
         </div>
-        <div className="ml-3 font-semibold text-gray-800">
-          {post.userId?.username || "Unknown User"}
-        </div>
+        
+        {/* Delete Button (Visible to owner OR Admin) */}
+        {(userInformation?._id === post.userId?._id || userInformation?.role === "admin") && (
+          <button 
+            onClick={handleDelete}
+            className="text-gray-400 hover:text-red-500 transition-colors p-2 rounded-full hover:bg-red-50"
+            title="Delete Post"
+          >
+            <FaTrash size={16} />
+          </button>
+        )}
       </div>
 
       {/* Post Image */}
