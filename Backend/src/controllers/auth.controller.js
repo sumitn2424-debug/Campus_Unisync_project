@@ -61,10 +61,14 @@ const signup = async (req, res) => {
     });
     console.log("✅ User saved successfully:", newUser.email, "OTP:", newUser.otp);
 
-    // Fire and forget (Background Email) for speed
-    sendMail(email, "OTP Verification", `Your OTP is ${otp}`).then(res => {
-      if (!res.success) console.error("Background Signup Email Failed:", res.error);
-    });
+    const emailResult = await sendMail(email, "OTP Verification", `Your OTP is ${otp}`);
+
+    if (!emailResult.success) {
+      return res.status(500).json({ 
+        message: "User created, but failed to send verification email. Please check your SMTP settings.",
+        error: emailResult.error 
+      });
+    }
 
     res.json({
       message: "OTP sent to email",
@@ -228,10 +232,14 @@ const resendOtp = async (req, res) => {
     await user.save();
     console.log(otp);
 
-    // Fire and forget (Background Email) for speed
-    sendMail(email, "Resent OTP", `Your OTP is ${otp}`).then(res => {
-      if (!res.success) console.error("Background Resend Email Failed:", res.error);
-    });
+    const emailResult = await sendMail(email, "Resent OTP", `Your OTP is ${otp}`);
+
+    if (!emailResult.success) {
+      return res.status(500).json({ 
+        message: "Failed to resend OTP email. Please check your SMTP settings.",
+        error: emailResult.error 
+      });
+    }
 
     res.json({ message: "OTP resent successfully" });
   } catch (err) {

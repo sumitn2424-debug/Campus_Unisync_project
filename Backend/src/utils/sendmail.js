@@ -6,7 +6,9 @@ const transporter = nodemailer.createTransport({
   port: 587,
   secure: false,
   family: 4, // Force IPv4
-  connectionTimeout: 5000, // 5 seconds
+  connectionTimeout: 5000, 
+  logger: true, // Enable logging
+  debug: true,  // Include SMTP traffic in logs
   auth: {
     user: process.env.EMAIL,
     pass: process.env.APP_PASSWORD,
