@@ -1,5 +1,11 @@
 // src/utils/sendMail.js
 const nodemailer = require("nodemailer");
+const dns = require("dns");
+
+// Force Node.js to prioritize IPv4 over IPv6
+if (dns.setDefaultResultOrder) {
+  dns.setDefaultResultOrder("ipv4first");
+}
 
 const transporter = nodemailer.createTransport({
   host: "smtp.gmail.com",
