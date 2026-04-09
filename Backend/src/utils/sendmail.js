@@ -9,8 +9,8 @@ if (dns.setDefaultResultOrder) {
 
 const transporter = nodemailer.createTransport({
   host: "smtp-relay.brevo.com",
-  port: 587,
-  secure: false, // TLS
+  port: 465,
+  secure: true, // SSL
   auth: {
     user: process.env.BREVO_USER,
     pass: process.env.BREVO_KEY,
