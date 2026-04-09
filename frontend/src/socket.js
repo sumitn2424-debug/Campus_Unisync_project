@@ -11,7 +11,7 @@ const getSocketUrl = () => {
   if (import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL.replace('/api', '');
   }
-  return "http://localhost:5001";
+  return "http://localhost:5002";
 };
 
 export const socket = io(getSocketUrl(), {

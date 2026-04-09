@@ -21,7 +21,7 @@ const io = new Server(server, {
 
 socketHandler(io); // Initialize socket handlers
 console.log("this is the server file") // ✅ FIXED
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT || 5002;
 
 
 server.listen(PORT, () => {
