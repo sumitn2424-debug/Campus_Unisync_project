@@ -18,6 +18,14 @@ const transporter = nodemailer.createTransport({
 });
 
 const sendMail = async (to, subject, text) => {
+  if (!process.env.BREVO_USER || !process.env.BREVO_KEY) {
+    console.error("❌ SMTP Error: BREVO_USER or BREVO_KEY is missing from .env");
+    return { 
+      success: false, 
+      error: "SMTP configuration missing. Please set BREVO_USER and BREVO_KEY." 
+    };
+  }
+
   try {
     const info = await transporter.sendMail({
       from: process.env.BREVO_USER,
