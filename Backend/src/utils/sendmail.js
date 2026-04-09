@@ -12,12 +12,22 @@ const transporter = nodemailer.createTransport({
 });
 
 const sendMail = async (to, subject, text) => {
-  await transporter.sendMail({
-    from: process.env.EMAIL,
-    to,
-    subject,
-    text,
-  });
+  try {
+    const info = await transporter.sendMail({
+      from: process.env.EMAIL,
+      to,
+      subject,
+      text,
+    });
+    console.log("✅ Email sent successfully:", info.messageId);
+    return { success: true, info };
+  } catch (error) {
+    console.error("❌ SendMail Error Details:");
+    console.error("Code:", error.code);
+    console.error("Message:", error.message);
+    console.error("Check your EMAIL and APP_PASSWORD environment variables on Render.");
+    return { success: false, error: error.message };
+  }
 };
 
 module.exports = sendMail;

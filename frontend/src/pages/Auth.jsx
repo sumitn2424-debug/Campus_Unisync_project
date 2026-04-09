@@ -74,12 +74,15 @@ export default function AuthUI() {
       const res = await api.post(`/auth/${mode}`, userFormData)
       console.log("data sent", res.data)
       if(res.status === 200){
+        toast.success("OTP sent! Please check your email.");
         setMode("verify-otp")
         setMessage("")
       }
     } catch (err) {
       console.log(err.response?.data, "this is signup error")
-      setMessage(err.response?.data.message)
+      const errorMessage = err.response?.data.message || "Signup failed";
+      setMessage(errorMessage);
+      toast.error(errorMessage);
     }
   }
 
@@ -116,11 +119,13 @@ export default function AuthUI() {
       console.log(res.status)
       setUserInformation(res.data.user)
       if (res.status === 200) {
+        toast.success("Account verified successfully! Welcome.");
         return navigate("/home")
       }
 
     } catch (err) {
       console.log(err.response?.data, "message : error 2")
+      toast.error(err.response?.data?.message || "Invalid OTP or verification failed");
     }
 
   }
@@ -134,10 +139,12 @@ export default function AuthUI() {
     console.log(loginEmail)
     if (!canResend) return
     try {
-      const data = await api.post("/auth/resend-otp", { email: loginEmail })
-      console.log(data)
+      const res = await api.post("/auth/resend-otp", { email: loginEmail })
+      console.log(res)
+      toast.success(res.data.message || "New OTP sent to your email.");
     } catch (err) {
       console.log(err.response?.data)
+      toast.error(err.response?.data?.message || "Failed to resend OTP");
     }
     setCanResend(false) // disable resend button
     setTimer(60) // reset timer 
