@@ -38,22 +38,16 @@ const createPost = async(req, res) => {
 const deletePost = async(req, res) => {
     const decoded = req.user;
     try{
-        const postId = req.params.id;
+        const postId = req.body.postId;
         const post = await createPostModel.findById(postId);
-        
         if(!post){
             return res.status(404).json({message:"Post not found"});
         }
-
-        // Robust ID checking: convert both to string for comparison
-        const isOwner = post.userId.toString() === (decoded._id || decoded.id).toString();
-        const isAdmin = decoded.role === "admin";
-
-        if(!isOwner && !isAdmin){
-            return res.status(403).json({message:"Forbidden: You are not authorized to delete this post"});
+        if(post.userId.toString() !== decoded._id && decoded.role !== "admin"){
+            return res.status(403).json({message:"Forbidden: You can only delete your own posts"});
         }
-
-        await post.deleteOne();
+        // await post.findIdAndDelete(postId);
+        await post.deleteOne()
         res.status(200).json({message:"Post deleted successfully"});
 
     }catch(err){
