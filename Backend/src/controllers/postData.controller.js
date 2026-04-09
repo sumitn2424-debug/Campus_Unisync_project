@@ -6,14 +6,18 @@ const data = async (req, res) => {
    try{
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
-    const posts = await createPostModel.find().
+    const userId = req.query.userId;
+    
+    // Add optional filter for specific user
+    const query = userId ? { userId: userId } : {};
+
+    const posts = await createPostModel.find(query).
     populate("userId", "username image").
     sort({ createdAt: -1 }).
     skip((page - 1) * limit).
     limit(limit);
-    // console.log(posts);
-    res.status(200).
-    json(posts);
+    
+    res.status(200).json(posts);
    }catch(err){
     res.status(500).json({message:err.message,
         nessage2:"Please login again"

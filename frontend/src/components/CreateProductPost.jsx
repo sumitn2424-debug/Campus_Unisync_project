@@ -1,7 +1,10 @@
 import { useState } from "react";
 import api from "../services/api";
+import toast from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
 
 export default function CreateProductPost() {
+  const navigate = useNavigate();
   const [productName, setProductName] = useState("");
   const [productDescription, setProductDescription] = useState("");
   const [price, setPrice] = useState("");
@@ -28,6 +31,8 @@ export default function CreateProductPost() {
     formData.append("price", price);
     formData.append("image", productImage);
 
+    const loadingToast = toast.loading("Listing your product...");
+
     try {
       const res = await api.post("/purchase/product", formData);
       console.log(res);
@@ -38,9 +43,17 @@ export default function CreateProductPost() {
       setPrice("");
       setProductImage(null);
       setPreview(null);
+      
+      toast.success("Product listed successfully!", { id: loadingToast });
+      
+      // Redirect after 1 second
+      setTimeout(() => {
+        navigate("/marketPlace");
+      }, 1000);
 
     } catch (err) {
       console.error(err);
+      toast.error("Failed to list product", { id: loadingToast });
     }
   };
 

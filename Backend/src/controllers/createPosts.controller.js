@@ -13,14 +13,17 @@ const createPost = async(req, res) => {
     try{
         const {title, description} = req.body;
 
-        const uplaadResult = await uploadFile(req.file.buffer.toString("base64"));
-        // console.log(req.file.buffer);
-        // console.log("Upload Result:", uplaadResult);
+        let imageUrl = "";
+        if (req.file) {
+            const uplaadResult = await uploadFile(req.file.buffer.toString("base64"));
+            imageUrl = uplaadResult.url;
+        }
+
         const newPostData = new createPostModel({
             userId: decoded._id || decoded.id,
             title: title,
             description: description,
-            image: uplaadResult.url,
+            image: imageUrl,
         })
         await newPostData.save();
 

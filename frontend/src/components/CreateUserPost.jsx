@@ -1,8 +1,10 @@
 import { useState } from "react";
-import axios from "axios";
 import api from "../services/api";
+import toast from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
 
 export default function CreatePost() {
+  const navigate = useNavigate();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [image, setImage] = useState(null);
@@ -23,24 +25,41 @@ export default function CreatePost() {
     e.preventDefault();
 
     const formData = new FormData();
-    formData.append("productName", title);
-    formData.append("productDescription", description);
-    formData.append("image", image);
+    formData.append("title", title);
+    formData.append("description", description);
+    
+    // Check if image exists before appending
+    if (image) {
+      formData.append("image", image);
+    }
+
+    const loadingToast = toast.loading("Creating your post...");
 
     try {
-      const res = await api.post("/purchase/product", formData);
+      const res = await api.post("/post/create-Post", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
 
-      const data = await res.json();
-      console.log(data);
+      console.log(res.data);
 
       // reset form
       setTitle("");
       setDescription("");
       setImage(null);
       setPreview(null);
+      
+      toast.success("Post created successfully!", { id: loadingToast });
+      
+      // Redirect after 1 second
+      setTimeout(() => {
+        navigate("/home");
+      }, 1000);
 
     } catch (err) {
       console.error(err);
+      toast.error("Failed to create post", { id: loadingToast });
     }
   };
 

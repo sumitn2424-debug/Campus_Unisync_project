@@ -8,6 +8,7 @@ import CreatePost from "../pages/CreatePost";
 import Marketplace from "../pages/MarketPlace";
 import CreateUserPost from "../pages/CreateUserPost";
 import CreateProductPost from "../pages/CreateProductPost";
+import NotFound from "../pages/NotFound";
 
 export const AppRoutes = () => {
     return (
@@ -17,22 +18,43 @@ export const AppRoutes = () => {
                     <Auth />
             } />
             <Route path="/home" element={
-                // <ProtectedRoutes>
+                <ProtectedRoutes>
                     <Home />
-                // </ProtectedRoutes>
+                </ProtectedRoutes>
             } />
             <Route path="/Profile" element={
-                // <ProtectedRoutes>
+                <ProtectedRoutes>
                     <Profile />
-                // {/* </ProtectedRoutes> */}
+                </ProtectedRoutes>
             } />
 
-            <Route path="/Message" element={<Messages />}/>
-            <Route path="/createPost" element={<CreatePost />}/>
-            <Route path="/createUserPost" element={<CreateUserPost />} />
-            <Route path="/createProductPost" element={<CreateProductPost />} />
-            <Route path="/marketPlace" element={<Marketplace />}/>
+            <Route path="/Message" element={
+                <ProtectedRoutes>
+                    <Messages />
+                </ProtectedRoutes>
+            }/>
+            <Route path="/createPost" element={
+                <ProtectedRoutes>
+                    <CreatePost />
+                </ProtectedRoutes>
+            }/>
+            <Route path="/createUserPost" element={
+                <ProtectedRoutes>
+                    <CreateUserPost />
+                </ProtectedRoutes>
+            } />
+            <Route path="/createProductPost" element={
+                <ProtectedRoutes>
+                    <CreateProductPost />
+                </ProtectedRoutes>
+            } />
+            <Route path="/marketPlace" element={
+                <ProtectedRoutes>
+                    <Marketplace />
+                </ProtectedRoutes>
+            }/>
             
+            <Route path="*" element={<NotFound />} />
             
         </Routes>
 

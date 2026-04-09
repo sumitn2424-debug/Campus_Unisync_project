@@ -3,6 +3,8 @@ import { useState, useEffect } from "react";
 import api from "../services/api"
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
+import toast from "react-hot-toast";
+
 export default function AuthUI() {
   const [mode, setMode] = useState("login"); // login | signup | verify-otp
   const [user, setUser] = useState(null)
@@ -36,16 +38,15 @@ export default function AuthUI() {
     e.preventDefault()
     try {
       const res = await api.post(`/auth/${mode}`, loginDetails)
-      // console.log("this is login response" , res.data.user)
       setUserInformation(res.data.user)
-      // console.log("this is login response status" ,res.status)
       if (res.status === 200 || user) {
+        toast.success("Welcome back!");
         return navigate("/home")
       }
     } catch (err) {
       console.log( "this is login error", err.response?.data)
+      toast.error(err.response?.data?.message || "Failed to login");
     }
-
   }
 
 

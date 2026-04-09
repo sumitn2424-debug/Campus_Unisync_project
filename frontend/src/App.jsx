@@ -3,6 +3,8 @@ import { AuthProvider } from "./context/AuthContext";
 import { AppRoutes } from "./routes/AppRoutes";
 import Footer from "./components/Footer";
 import { useLocation } from "react-router-dom";
+import { Toaster } from "react-hot-toast";
+
 export default function App() {
   const location = useLocation()
   console.log(location.pathname)
@@ -14,10 +16,10 @@ export default function App() {
 
         <AppRoutes />
         
+        <Toaster position="top-center" />
       </AuthProvider>
 
       {location.pathname !== "/" && <Footer />}
     </div>
-
   );
 }
