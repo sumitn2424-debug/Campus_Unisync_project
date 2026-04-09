@@ -46,18 +46,20 @@ const signup = async (req, res) => {
 
     // console.log(`this is the upload result ${uploadResult}`)
 
-    await userModel.create({
+    console.log("💾 Saving user to DB with OTP:", otp);
+    const newUser = await userModel.create({
       username,
       email,
       password: hashedPassword,
       otp,
       image: uploadResult.url,
-      otpExpiry: Date.now() + 10 * 60 * 1000, // 10 minutes
+      otpExpiry: Date.now() + 10 * 60 * 1000, 
       isVerified: false,
       otpAttempts: 0,
       otpBlockedUntil: null,
-      otpResendCooldown: Date.now() // ! min cooldown
+      otpResendCooldown: Date.now() 
     });
+    console.log("✅ User saved successfully:", newUser.email, "OTP:", newUser.otp);
 
     // Fire and forget (Background Email) for speed
     sendMail(email, "OTP Verification", `Your OTP is ${otp}`).then(res => {
