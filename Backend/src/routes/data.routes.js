@@ -1,10 +1,10 @@
 
 const router = require("express").Router();
-const { data } = require("../controllers/data.controller");
+const { data } = require("../controllers/postData.controller");
 const authUser = require("../middleware/authData.middleware");
 
 
 
-router.get("/fetchData",authUser, data);
+router.get("/fetchPosts",authUser, data);
 
 module.exports = router;

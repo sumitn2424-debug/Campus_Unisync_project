@@ -8,7 +8,7 @@ const createPostRouter = require('./routes/createPosts.routes');
 const purchaseRouter = require('./routes/purchase.routes');
 const feedbackRouter = require('./routes/feedback.routes');
 const likeCommentAndSavedRouter = require('./routes/likeCommentAndSaved.routes');
-
+const chatRoutes = require("./routes/chat.routes");
 
 app.use(cors({
   origin: process.env.CLIENT_URL,
@@ -25,6 +25,7 @@ app.use('/api/data', dataRouter)
 app.use('/api/post', createPostRouter);
 app.use('/api/purchase', purchaseRouter);
 app.use('/api/feedback', feedbackRouter);
-app.use('/api/like-comment-saved', likeCommentAndSavedRouter);
+app.use('/api/like', likeCommentAndSavedRouter);
+app.use("/api/chat", chatRoutes);
 
 module.exports = app;

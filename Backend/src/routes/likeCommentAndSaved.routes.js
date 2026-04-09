@@ -5,10 +5,10 @@ const likeCommentAndSavedController = require("../controllers/likeCommentAndSave
 
 
 
-router.post("/like/:id", likeCommentAndSavedMiddleware, likeCommentAndSavedController.likePosts);
-router.post("/save/:id", likeCommentAndSavedMiddleware, likeCommentAndSavedController.savePosts);
-router.post("/comment/:id", likeCommentAndSavedMiddleware, likeCommentAndSavedController.commentOnPost);
-router.delete("/d-comment/:commentId", likeCommentAndSavedMiddleware, likeCommentAndSavedController.deleteComment);
+router.post("/like", likeCommentAndSavedMiddleware, likeCommentAndSavedController.likePosts);
+router.post("/save", likeCommentAndSavedMiddleware, likeCommentAndSavedController.savePosts);
+router.post("/comment", likeCommentAndSavedMiddleware, likeCommentAndSavedController.commentOnPost);
+router.delete("/d-comment", likeCommentAndSavedMiddleware, likeCommentAndSavedController.deleteComment);
 router.get("/saved-posts", likeCommentAndSavedMiddleware, likeCommentAndSavedController.getSavedPosts);
 
 module.exports = router;

@@ -1,8 +1,12 @@
 const createPostModel = require("../models/createPost.model");
 const uploadFile = require("../services/storage.service")
 
+
+//create post
 const createPost = async(req, res) => {
     const decoded = req.user; // Get user info from auth middleware
+    // console.log(req.user)
+    // console.log("Decoded user from middleware:", req.user);
     if(!decoded.isVerified){
         return res.status(400).json({message:"Please verify your email first"})
     }
@@ -11,19 +15,43 @@ const createPost = async(req, res) => {
 
         const uplaadResult = await uploadFile(req.file.buffer.toString("base64"));
         // console.log(req.file.buffer);
-        console.log("Upload Result:", uplaadResult);
+        // console.log("Upload Result:", uplaadResult);
         const newPostData = new createPostModel({
-            userId: decoded.id,
-            username: decoded.username,
+            userId: decoded._id || decoded.id,
             title: title,
             description: description,
             image: uplaadResult.url,
         })
         await newPostData.save();
+
         res.status(201).json({message:"Post created successfully", data: newPostData});
     }catch(err){
         res.status(500).json({message:err.message})
     }
 }
 
-module.exports = createPost ;
+
+//delete post
+const deletePost = async(req, res) => {
+    const decoded = req.user;
+    try{
+        const postId = req.body.postId;
+        const post = await createPostModel.findById(postId);
+        if(!post){
+            return res.status(404).json({message:"Post not found"});
+        }
+        if(post.userId.toString() !== decoded._id){
+            return res.status(403).json({message:"Forbidden: You can only delete your own posts"});
+        }
+        // await post.findIdAndDelete(postId);
+        await post.deleteOne()
+        res.status(200).json({message:"Post deleted successfully"});
+
+    }catch(err){
+        res.status(500).json({message:err.message})
+        // console.log(err.message)
+    }
+}
+
+
+module.exports = { createPost, deletePost };

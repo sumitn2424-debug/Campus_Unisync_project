@@ -1,24 +1,23 @@
-import React from 'react'
-import axios from 'axios'
-
-
-const App = () => {
-  const fetchData = async () => {
-    try {
-      const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/data/fetchData`, { withCredentials: true });
-      console.log(res.data);
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    }
-  }
+import Navbar from "./components/Navbar";
+import { AuthProvider } from "./context/AuthContext";
+import { AppRoutes } from "./routes/AppRoutes";
+import Footer from "./components/Footer";
+import { useLocation } from "react-router-dom";
+export default function App() {
+  const location = useLocation()
+  console.log(location.pathname)
   return (
-    <div>
-      button to fetch data 
-      <button
-      className='text white font-bold' 
-       onClick={fetchData}>Fetch Data</button>
-    </div>
-  )
-}
+    <div className="bg-gray-100 min-h-screen flex flex-col">
+      <AuthProvider>
+        {/* ✅ Show navbar only when NOT on "/" */}
+        {location.pathname !== "/" && <Navbar />}
 
-export default App
+        <AppRoutes />
+        
+      </AuthProvider>
+
+      {location.pathname !== "/" && <Footer />}
+    </div>
+
+  );
+}

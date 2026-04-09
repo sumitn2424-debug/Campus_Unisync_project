@@ -1,35 +1,29 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-import api from '../services/api';
+import { useState } from "react";
+import {createContext} from "react";
+import api from "../services/api";
+import { useNavigate } from "react-router-dom";
 
-const AuthContext = createContext(null);
+export const AuthContext = createContext();
 
-export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(() => {
-    // Try to restore user from localStorage if we get refreshed
-    const saved = localStorage.getItem('user');
-    return saved ? JSON.parse(saved) : null;
-  });
-  
-  const login = (userData) => {
-    setUser(userData);
-    localStorage.setItem('user', JSON.stringify(userData));
-  };
+export const AuthProvider = ({children}) => {
+    const navigate = useNavigate()
 
-  const logout = async () => {
-    try {
-      await api.post('/user/logout');
-    } catch (err) {
-      console.error(err);
+    const [userInformation, setUserInformation] = useState(null)
+
+    const logOut = () => {
+        setUserInformation(null)
+       try {
+        api.post('/auth/logout')
+        navigate('/')
+       } catch (error) {
+        console.log(error)
+       }
     }
-    setUser(null);
-    localStorage.removeItem('user');
-  };
 
-  return (
-    <AuthContext.Provider value={{ user, login, logout, setUser }}>
-      {children}
-    </AuthContext.Provider>
-  );
-};
 
-export const useAuth = () => useContext(AuthContext);
+    return (
+        <AuthContext.Provider value={{setUserInformation,userInformation,logOut}}>
+            {children}
+        </AuthContext.Provider>
+    )
+}

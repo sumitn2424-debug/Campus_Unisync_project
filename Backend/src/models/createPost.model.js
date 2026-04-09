@@ -5,7 +5,9 @@ const createPostSchema = new mongoose.Schema({
     image: { type: String },
     title: { type: String, required: true },
     description: { type: String},
-    createdAt: { type: Date, default: Date.now }
+    createdAt: { type: Date, default: Date.now },
+    // likedby: [{ type: mongoose.Schema.Types.ObjectId, ref: "UserData" }],
+    // savedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: "UserData" }],
 });
 
 const createPostModel = mongoose.model("CreatePost", createPostSchema);

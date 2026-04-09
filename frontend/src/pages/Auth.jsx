@@ -1,128 +1,346 @@
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import api from '../services/api';
 
-export default function Auth() {
-  const [mode, setMode] = useState('login'); // 'login', 'signup', 'otp'
-  const { register, handleSubmit, watch, formState: { errors } } = useForm();
-  const [errorMsg, setErrorMsg] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [registeredEmail, setRegisteredEmail] = useState('');
-  const { login } = useAuth();
-  const navigate = useNavigate();
+import { useState, useEffect } from "react";
+import api from "../services/api"
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
+export default function AuthUI() {
+  const [mode, setMode] = useState("login"); // login | signup | verify-otp
+  const [user, setUser] = useState(null)
+  const navigate = useNavigate()
+  const {setUserInformation} = useAuth()
 
-  const handleLogin = async (data) => {
+  /* ================= AUTO lOGIN ================= */
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await api.get("/auth/me");
+        setUser(res.data.user);
+        // console.log(user)
+      } catch {
+        setUser(null);
+      }
+    };
+    fetchUser();
+  }, []);
+
+  /* ================= LOGIN ================= */
+  const [loginDetails, setLoginDetails] = useState({ email: "", password: "" })
+  const handleLoginChange = (e) => {
+    setLoginDetails({
+      ...loginDetails,
+      [e.target.name]: e.target.value
+    })
+  }
+
+  const handleLoginSubmit = async (e) => {
+    e.preventDefault()
     try {
-      setLoading(true);
-      setErrorMsg('');
-      const res = await api.post('/user/login', data);
-      login(res.data.user || { email: data.email, name: res.data.user?.username || res.data.username });
-      navigate('/dashboard');
+      const res = await api.post(`/auth/${mode}`, loginDetails)
+      // console.log("this is login response" , res.data.user)
+      setUserInformation(res.data.user)
+      // console.log("this is login response status" ,res.status)
+      if (res.status === 200 || user) {
+        return navigate("/home")
+      }
     } catch (err) {
-      setErrorMsg(err.response?.data?.message || 'Login failed');
-    } finally {
-      setLoading(false);
+      console.log( "this is login error", err.response?.data)
     }
-  };
 
-  const handleSignup = async (data) => {
+  }
+
+
+
+  /* ================= SIGNUP ================= */
+  const [loginUsername, setLoginUsername] = useState("")
+  const [loginEmail, setLoginEmail] = useState("")
+  const [loginPassword, setLoginPassword] = useState("")
+  const [loginImage, setLoginImage] = useState(null); // for preview only
+  const [message, setMessage] = useState("")
+
+
+  const handleSignUpSubmit = async (e) => {
+    e.preventDefault()
+    const userFormData = new FormData()
+    userFormData.append("username", loginUsername)
+    userFormData.append("email", loginEmail)
+    userFormData.append("password", loginPassword)
+    userFormData.append("image", loginImage)
+
+    // console.log(loginImage)
+    // console.log(mode)
+    
     try {
-      setLoading(true);
-      setErrorMsg('');
-      await api.post('/user/signup', data);
-      setRegisteredEmail(data.email);
-      setMode('otp');
-      setErrorMsg('OTP sent to your email.');
+      const res = await api.post(`/auth/${mode}`, userFormData)
+      console.log("data sent", res.data)
+      if(res.status === 200){
+        setMode("verify-otp")
+        setMessage("")
+      }
     } catch (err) {
-      setErrorMsg(err.response?.data?.message || 'Signup failed');
-    } finally {
-      setLoading(false);
+      console.log(err.response?.data, "this is signup error")
+      setMessage(err.response?.data.message)
     }
-  };
+  }
 
-  const handleVerifyOtp = async (data) => {
+  /* ================= OTP ================= */
+  const [userOtp, setUserOtp] = useState('')
+  const [timer, setTimer] = useState(60);
+
+
+  // Timer countdown
+  useEffect(() => {
+    if (timer > 0) {
+      const interval = setInterval(() => {
+        setTimer(prev => prev - 1);
+      }, 1000);
+      return () => clearInterval(interval);
+    } else {
+      setCanResend(true); // enable resend button
+    }
+  }, [timer]);
+
+
+  // verify otp
+  const verifyOtp = async (e) => {
+    e.preventDefault()
+    const otpFormData = {
+      otp: userOtp,
+      email: loginEmail
+    }
+
+    console.log(loginEmail, userOtp)
     try {
-      setLoading(true);
-      setErrorMsg('');
-      const payload = { email: registeredEmail || watch('email'), otp: data.otp };
-      await api.post('/user/verify-otp', payload);
-      setMode('login');
-      setErrorMsg('Signup complete! Please login now.');
+      const res = await api.post("/auth/verify-otp", otpFormData)
+      console.log(res)
+      console.log(res.status)
+      setUserInformation(res.data.user)
+      if (res.status === 200) {
+        return navigate("/home")
+      }
+
     } catch (err) {
-      setErrorMsg(err.response?.data?.message || 'Verification failed');
-    } finally {
-      setLoading(false);
+      console.log(err.response?.data, "message : error 2")
     }
-  };
 
-  const submitter = (data) => {
-    if (mode === 'login') return handleLogin(data);
-    if (mode === 'signup') return handleSignup(data);
-    return handleVerifyOtp(data);
-  };
+  }
 
 
+  /* ================= resend otp ================ */
+
+  const [canResend, setCanResend] = useState(false)
+  const handelResendOtp = async (e) => {
+    e.preventDefault()
+    console.log(loginEmail)
+    if (!canResend) return
+    try {
+      const data = await api.post("/auth/resend-otp", { email: loginEmail })
+      console.log(data)
+    } catch (err) {
+      console.log(err.response?.data)
+    }
+    setCanResend(false) // disable resend button
+    setTimer(60) // reset timer 
+  }
+
+
+  
   return (
-    <div className="flex justify-center items-center min-h-[80vh]">
-      <div className="glass-panel p-8 w-full max-w-md rounded-2xl relative overflow-hidden">
-        {/* Decorative blur elements inside panel */}
-        <div className="absolute top-0 left-0 w-32 h-32 bg-primary-500/20 blur-[50px] -z-10 rounded-full" />
-        <div className="absolute bottom-0 right-0 w-32 h-32 bg-purple-500/20 blur-[50px] -z-10 rounded-full" />
-        
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent mb-2">
-          {mode === 'login' ? 'Welcome Back' : mode === 'signup' ? 'Create Account' : 'Verify Email'}
-        </h1>
-        <p className="text-slate-400 mb-8 text-sm">
-          {mode === 'login' ? 'Enter your credentials to access your dashboard' : 
-            mode === 'signup' ? 'Join us and explore amazing features' : 'Enter the OTP sent to your email'}
-        </p>
+    <div className="h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600">
 
-        {errorMsg && (
-          <div className="mb-4 p-3 bg-red-500/10 border border-red-500/50 rounded-lg text-red-200 text-sm">
-            {errorMsg}
-          </div>
+      <div className="bg-white w-[350px] p-6 rounded-2xl shadow-xl">
+
+        <h1 className="text-2xl font-bold text-center text-indigo-600 mb-4">
+          UniSync
+        </h1>
+
+        {/* ================= LOGIN ================= */}
+        {mode === "login" && (
+          <form onSubmit={handleLoginSubmit}>
+            <div className="space-y-3">
+              <input
+                type="email"
+                name="email"
+                required
+                placeholder="Email or Username"
+                value={loginDetails.email}
+                onChange={handleLoginChange}
+                className="w-full border p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              />
+
+              <input
+                type="password"
+                name="password"
+                placeholder="Password"
+                required
+                value={loginDetails.password}
+                onChange={handleLoginChange}
+                className="w-full border p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              />
+
+              <button type="submit" className="w-full bg-indigo-500 text-white py-2 rounded-lg hover:bg-indigo-600 transition active:scale-95">
+                Login
+              </button>
+
+              <p className="text-sm text-center">
+                Don't have an account?{" "}
+                <span
+                  className="text-indigo-600 cursor-pointer"
+                  onClick={() => setMode("signup")}
+                >
+                  Sign up
+                </span>
+              </p>
+            </div>
+          </form>
         )}
 
-        <form onSubmit={handleSubmit(submitter)} className="space-y-4">
-          {(mode === 'login' || mode === 'signup') && (
-            <>
-              {mode === 'signup' && (
-                <div>
-                  <input {...register('username')} placeholder="Username" className="input-field" required />
-                </div>
-              )}
-              <div>
-                <input {...register('email')} type="email" placeholder="Email Address" className="input-field" required />
-              </div>
-              <div>
-                <input {...register('password')} type="password" placeholder="Password" className="input-field" required />
-              </div>
-            </>
-          )}
+        {/* ================= SIGNUP ================= */}
+        {mode === "signup" && (
+          <form onSubmit={(e) => {
+            handleSignUpSubmit(e)
+          }}>
+            <div className="space-y-3">
+              <input
+                type="email"
+                placeholder="Email"
+                name="email"
+                required
+                value={loginEmail}
+                onChange={(e) => {
+                  setLoginEmail(e.target.value)
+                }}
+                className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-indigo-400"
+              />
 
-          {mode === 'otp' && (
-            <div>
-              <input {...register('otp')} placeholder="Enter OTP" className="input-field tracking-widest text-center text-xl" required />
+              <input
+                type="text"
+                placeholder="Username"
+                name="username"
+                required
+                value={loginUsername}
+                onChange={(e) => {
+                  setLoginUsername(e.target.value)
+                  setTimer(60);
+                }}
+                className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-indigo-400"
+              />
+
+              <input
+                type="password"
+                placeholder="Password"
+                name="password"
+                required
+                value={loginPassword}
+                onChange={(e) => {
+                  setLoginPassword(e.target.value)
+                }}
+                className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-indigo-400"
+              />
+
+              {/* Image Upload */}
+              <input
+                type="file"
+                accept="image/*"
+                className="w-full border p-2 rounded-lg cursor-pointer"
+                onChange={(e) => setLoginImage(e.target.files[0])}
+              />
+
+              {/* Image Preview */}
+              <div className="flex justify-center">
+                {loginImage ? (
+                  <img
+                    src={URL.createObjectURL(loginImage)}
+                    alt="preview"
+                    className="w-20 h-20 rounded-full object-cover border"
+                  />
+                ) : (
+                  <div className="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center text-sm text-gray-500">
+                    Preview
+                  </div>
+                )}
+              </div>
+
+              <button
+                className="w-full bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 transition active:scale-95"
+                type="submit active:scale-95"
+              >
+                Sign Up
+              </button>
+
+              <p className={message==="" ? "text-sm text-center" : "text-sm text-center text-red-700-600"}>
+                {message ==="" ? "Already have an account?" : message}
+                <span
+                  className={message==="" ? "text-indigo-600 cursor-pointer" : "text-green-600 cursor-pointer"}
+                  onClick={() => setMode("login")}
+                >
+                  {message==="" ? "Login" : ""}
+                </span>
+              </p>
             </div>
-          )}
+          </form>
+        )}
 
-          <button type="submit" disabled={loading} className="btn-primary w-full mt-2">
-            {loading ? 'Processing...' : mode === 'login' ? 'Sign In' : mode === 'signup' ? 'Sign Up' : 'Verify'}
-          </button>
-        </form>
+        {/* ================= OTP ================= */}
+        {mode === "verify-otp" && (
+          <form onSubmit={(e) => verifyOtp(e)}>
+            <div className="space-y-3 text-center">
+              <p className="text-sm text-gray-600">
+                Enter OTP sent to your email
+              </p>
 
-        <div className="mt-6 text-center text-sm text-slate-400">
-          {mode === 'login' ? (
-            <p>New here? <button onClick={() => setMode('signup')} className="text-primary-400 hover:text-primary-300 font-medium ml-1">Create an account</button></p>
-          ) : mode === 'signup' ? (
-            <p>Already have an account? <button onClick={() => setMode('login')} className="text-primary-400 hover:text-primary-300 font-medium ml-1">Sign in</button></p>
-          ) : (
-            <p><button onClick={() => setMode('signup')} className="text-primary-400 hover:text-primary-300 font-medium">Back to Sign Up</button></p>
-          )}
-        </div>
+              <input
+                type="text"
+                name="otp"
+                required
+                value={userOtp}
+                onChange={(e) => setUserOtp(e.target.value)}
+                placeholder="Enter OTP"
+                className="w-full border p-2 rounded-lg text-center tracking-widest focus:ring-2 focus:ring-indigo-400"
+              />
+
+              <button
+                type="submit"
+                className="w-full bg-orange-500 text-white py-2 rounded-lg hover:bg-orange-600 transition"
+              >
+                Verify OTP
+              </button>
+
+              {/* Timer */}
+              <p className="text-gray-500 text-sm">
+                ⏳ Resend OTP in {timer}s
+              </p>
+
+              {/* Resend OTP button */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  handelResendOtp(e)
+
+                }}
+                disabled={!canResend}
+                className={`w-full py-2 rounded-lg transition ${canResend
+                  ? "bg-blue-500 text-white hover:bg-blue-600 active:scale-95"
+                  : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                  }`}
+
+              >
+                🔁 Resend OTP
+              </button>
+
+              {/* Back Button */}
+              <button
+                type="button"
+                className="w-full bg-gray-200 py-2 rounded-lg hover:bg-gray-300 transition active:scale-95"
+                onClick={() => setMode("signup")}
+              >
+                ⬅ Back to Signup
+              </button>
+            </div>
+          </form>
+        )}
+
       </div>
     </div>
   );
 }
+

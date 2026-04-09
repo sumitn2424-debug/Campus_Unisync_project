@@ -3,38 +3,61 @@ const userModel = require("../models/user.model");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const sendMail = require("../utils/sendmail");
+const uploadFile = require("../services/storage.service")
 
-// SIGNUP (OTP sent only once)
+// SIGNUP (OTP sent only once) 
 const signup = async (req, res) => {
-
+  console.log("auth signup is working")
   try {
     const { email, password, username } = req.body;
+    // console.log(req.body)
+    // console.log(req.file)
+    const imageBuffer = req.file.buffer
+    if (!imageBuffer) {
+      return res.status(400).json({ message: "Image is required" });
+    }
 
     const existingUser = await userModel.findOne({ $or: [{ email }, { username }] });
     if (existingUser) {
+      if (username == existingUser.username) {
+        return res.status(400).json({ message: "Username already taken by anouther user" });
+      }
       return res.status(400).json({ message: "User already exists" });
+    }
+
+    if (password.length <= 5) {
+      return res.status(400).json({ message: "Password must be at least 6 characters long" });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
+    const uploadResult = await uploadFile(imageBuffer.toString("base64"))
+
+    // console.log(`this is the upload result ${uploadResult}`)
+
     await userModel.create({
       username,
       email,
       password: hashedPassword,
       otp,
-      otpExpiry: Date.now() + 5 * 60 * 1000,
+      image: uploadResult.url,
+      otpExpiry: Date.now() + 10 * 60 * 1000, // 10 minutes
       isVerified: false,
+      otpAttempts: 0,
+      otpBlockedUntil: null,
+      otpResendCooldown: Date.now() // ! min cooldown
     });
 
     await sendMail(email, "OTP Verification", `Your OTP is ${otp}`);
-    
-    res.json({ message: "OTP sent to email",
-        username,
-        email,
-        password
-     });
+
+    res.json({
+      message: "OTP sent to email",
+      username,
+      email,
+      password
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -42,6 +65,7 @@ const signup = async (req, res) => {
 
 // VERIFY OTP
 const verifyOtp = async (req, res) => {
+
   try {
     const { email, otp } = req.body;
 
@@ -51,26 +75,60 @@ const verifyOtp = async (req, res) => {
       return res.status(400).json({ message: "User not found" });
     }
 
-    if (user.otp !== otp || user.otpExpiry < Date.now()) {
-      return res.status(400).json({ message: "Invalid or expired OTP" });
+    // Check if blocked
+    if (user.otpBlockedUntil && user.otpBlockedUntil > Date.now()) {
+      return res.status(429).json({
+        message: "Too many attempts. Try again later."
+      });
     }
 
+    if (user.otp !== otp || user.otpExpiry < Date.now()) {
+      user.otpAttempts += 1;
+      return res.status(400).json({
+        message: `Invalid OTP. Attempts left: ${5 - user.otpAttempts}`
+      });
+
+
+      //  Block after 5 attempts
+      if (user.otpAttempts >= 5) {
+        user.otpBlockedUntil = Date.now() + 10 * 60 * 1000; // 10 min block
+        user.otpAttempts = 0; // reset attempts after block
+      }
+      await user.save();
+      return res.status(400).json({ message: "Invalid or expired OTP" });
+
+    }
+    // ✅ Success
     user.isVerified = true;
     user.otp = null;
     user.otpExpiry = null;
+    user.otpAttempts = 0;
+    user.otpBlockedUntil = null;
 
     await user.save();
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
+    const token = jwt.sign({
+      _id: user._id, 
+      username:user.username,
+      email: user.email,
+      image: user.image,
+      isVerified: user.isVerified
+    }, process.env.JWT_SECRET);
+
     res.cookie("token", token, {
       httpOnly: true,
-      secure:false,
+      secure: false,
       sameSite: "strict",
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7days
     });
 
 
-    res.json({ message: "Account verified successfully" });
+    res.status(200).json({
+      message: "Account verified successfully",
+      token,
+      image: user.image,
+      user
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -92,23 +150,32 @@ const login = async (req, res) => {
         message: "Please verify your email first",
       });
     }
-
+    password.trim();
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
       return res.status(400).json({ message: "Wrong password" });
     }
+    console.log(user.image)
+    const token = jwt.sign({
+      _id: user._id,
+      email: user.email,
+      username: user.username,
+      image: user.image,
+      isVerified: user.isVerified
+    }, process.env.JWT_SECRET);
 
-    const token = jwt.sign({ id: user._id, email: user.email, username: user.username, isVerified: user.isVerified }, process.env.JWT_SECRET);
     res.cookie("token", token, {
       httpOnly: true,
-      secure:false,
+      secure: false,
       sameSite: "strict",
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7days
     });
     res.json({
       message: "Login successful",
       token,
+      user: user.image,
+      user
     });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -125,18 +192,29 @@ const resendOtp = async (req, res) => {
     if (!user) {
       return res.status(400).json({ message: "User not found" });
     }
+    // ⏱ Cooldown check
+    if (user.otpResendCooldown && user.otpResendCooldown > Date.now()) {
+      const seconds = Math.ceil(
+        (user.otpResendCooldown - Date.now()) / 1000
+      );
+      return res.status(429).json({
+        message: `Please wait ${seconds}s before requesting OTP again`
+      });
+    }
 
+    // Generate OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-
     user.otp = otp;
     user.otpExpiry = Date.now() + 5 * 60 * 1000;
 
+    // set new cooldown
+    user.otpResendCooldown = Date.now() + 60 * 1000;
     await user.save();
     console.log(otp);
 
     await sendMail(email, "Resent OTP", `Your OTP is ${otp}`);
 
-    res.json({ message: "OTP resent" });
+    res.json({ message: "OTP resent successfully" });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -145,7 +223,6 @@ const resendOtp = async (req, res) => {
 
 const logout = (req, res) => {
   try {
-    console.log("Cookies:", req.cookies);
 
     const token = req.cookies?.token;
 
@@ -177,7 +254,7 @@ const logout = (req, res) => {
 };
 
 
-
+// forget password
 const forgetPassword = async (req, res) => {
   try {
     const { email } = req.body;
@@ -232,4 +309,42 @@ const resetPassword = async (req, res) => {
   }
 };
 
-module.exports = { signup, verifyOtp, login, resendOtp, logout, forgetPassword, resetPassword};
+// Reset Userneme Not Used
+const resetUsername = async (req, res) => {
+  try {
+    const { email, otp, newUsername } = req.body;
+
+    const user = await userModel.findOne({ email });
+
+    if (!user) {
+      return res.status(400).json({ message: "User not found" });
+    }
+
+    if (user.otp !== otp || user.otpExpiry < Date.now()) {
+      return res.status(400).json({ message: "Invalid or expired OTP" });
+    }
+
+    user.username = newUsername;
+    user.otp = undefined;
+    user.otpExpiry = undefined;
+
+    await user.save();
+
+    res.json({ message: "Username reset successfully" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+
+
+const getMe = async (req, res) => {
+  try {
+    const user = await userModel.findById(req.user.id).select("-password");
+    res.status(200).json({ user });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+module.exports = { signup, verifyOtp, login, resendOtp, logout, forgetPassword, resetPassword, getMe };
