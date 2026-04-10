@@ -6,7 +6,7 @@ const like = require("../models/like.model");
 
 // Like or Unlike a Post
 const likePosts = async (req, res) => {
-    const decoded = req.user._id;
+    const decoded = req.user._id || req.user.id;
     const userId = decoded.toString();
     const postId = req.body.postId;
     console.log("route loaded")
@@ -29,7 +29,8 @@ const likePosts = async (req, res) => {
             return res.status(200).json({
                 message: "Post liked",
                 data: post,
-                likeCount: 1
+                likeCount: 1,
+                isLiked: true
             });
         }
 
@@ -57,7 +58,7 @@ const likePosts = async (req, res) => {
 
 // Save or Unsave a Post
 const savePosts = async (req, res) => {
-    const decoded = req.user._id;
+    const decoded = req.user._id || req.user.id;
     const userId = decoded.toString();
     const postId = req.body.postId;
     try {
@@ -76,7 +77,8 @@ const savePosts = async (req, res) => {
             return res.status(200).json({
                 message: "Post saved",
                 data: newPostSavedModel,
-                saveCount: 1
+                saveCount: 1,
+                isSaved: true
             });
         }
 
@@ -103,7 +105,7 @@ const savePosts = async (req, res) => {
 
 // get savee posts of a user
 const getSavedPosts = async (req, res) => {
-    const decoded = req.user._id;
+    const decoded = req.user._id || req.user.id;
     const userId = decoded.toString();
     try {
         const savedPosts = await savePost.find({ savedBy: userId });
@@ -119,7 +121,7 @@ const getSavedPosts = async (req, res) => {
 
 //Post a comment
 const commentOnPost = async (req, res) => {
-    const decoded = req.user._id;
+    const decoded = req.user._id || req.user.id;
     const userId = decoded.toString();
     const { content } = req.body;
     const postId = req.body.postId;
@@ -151,7 +153,7 @@ const commentOnPost = async (req, res) => {
 
 // Delete a comment (Optional, not implemented in routes yet)
 const deleteComment = async (req, res) => {
-    const decoded = req.user._id;
+    const decoded = req.user._id || req.user.id;
     const userId = decoded.toString();
     const commentId = req.body.postId;
 

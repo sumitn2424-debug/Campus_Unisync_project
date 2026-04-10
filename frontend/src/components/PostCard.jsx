@@ -13,17 +13,20 @@ export default function PostCard({ post, onDelete }) {
   const { userInformation } = useAuth();
   const { likePost , savePost} = usePost();
   
-  // Button states
-  const [liked, setLiked] = useState(false);
+  // Button states initialized from post data
+  const [liked, setLiked] = useState(post.isLiked || false);
+  const [likeCount, setLikeCount] = useState(post.likeCount || 0);
   const [commented, setCommented] = useState(false);
   const [shared, setShared] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [saved, setSaved] = useState(post.isSaved || false);
 
   const handleLike = async () => {
     const res = await likePost(post._id);
     if(!res) return ;
     setLiked(res.isLiked);
+    setLikeCount(res.likeCount);
   };
+
 
   const handleSave = async () => {
     const res = await savePost(post._id);
@@ -94,11 +97,14 @@ export default function PostCard({ post, onDelete }) {
       {/* Actions */}
       <div className="p-3 flex justify-between text-gray-600 text-xl">
         {/* Like */}
-        <button onClick={() =>{
-           handleLike()
-        }}>
-          {liked ? <FaHeart className="text-red-500" /> : <FaRegHeart />}
-        </button>
+        <div className="flex items-center space-x-1">
+          <button onClick={() =>{
+             handleLike()
+          }}>
+            {liked ? <FaHeart className="text-red-500" /> : <FaRegHeart />}
+          </button>
+          <span className="text-sm">{likeCount}</span>
+        </div>
 
         {/* Comment */}
         {/* <button onClick={() => setCommented(!commented)}>

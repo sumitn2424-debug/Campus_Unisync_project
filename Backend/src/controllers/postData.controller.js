@@ -17,7 +17,26 @@ const data = async (req, res) => {
     skip((page - 1) * limit).
     limit(limit);
     
-    res.status(200).json(posts);
+    // Fetch counts and status for each post
+    const likeModel = require("../models/like.model");
+    const saveModel = require("../models/save.model");
+    
+    const currUserId = decoded ? (decoded._id || decoded.id) : null;
+
+    const postsWithCounts = await Promise.all(posts.map(async (post) => {
+        const likeDoc = await likeModel.findOne({ postId: post._id });
+        const saveDoc = await saveModel.findOne({ postId: post._id });
+        
+        return {
+            ...post.toObject(),
+            likeCount: likeDoc ? likeDoc.likes.length : 0,
+            saveCount: saveDoc ? saveDoc.savedBy.length : 0,
+            isLiked: (likeDoc && currUserId) ? likeDoc.likes.includes(currUserId) : false,
+            isSaved: (saveDoc && currUserId) ? saveDoc.savedBy.includes(currUserId) : false,
+        };
+    }));
+    
+    res.status(200).json(postsWithCounts);
    }catch(err){
     res.status(500).json({message:err.message,
         nessage2:"Please login again"
