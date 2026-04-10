@@ -1,10 +1,14 @@
 import { useEffect, useState } from "react";
 import api from "../services/api";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
+import toast from "react-hot-toast";
+import { FaTrash } from "react-icons/fa";
 
 export default function PurchaseFeed() {
     const [products, setProducts] = useState([]);
     const navigate = useNavigate();
+    const { userInformation } = useAuth();
 
     const fetchProducts = async () => {
         try {
@@ -39,8 +43,24 @@ export default function PurchaseFeed() {
         });
     };
 
+    // 🔥 Handle Delete Button
+    const handleDelete = async (productId) => {
+        if (!window.confirm("Are you sure you want to delete this product?")) return;
+
+        const loadingToast = toast.loading("Deleting product...");
+        try {
+            await api.delete(`/purchase/product/${productId}`);
+            toast.success("Product deleted successfully!", { id: loadingToast });
+            // Remove from feed seamlessly
+            setProducts((prev) => prev.filter((p) => p._id !== productId));
+        } catch (err) {
+            console.error(err);
+            toast.error(err.response?.data?.message || "Failed to delete product", { id: loadingToast });
+        }
+    };
+
     return (
-        <div className="max-w-4xl mx-auto mt-6 space-y-6">
+        <div className="max-w-4xl mx-auto mt-6 space-y-6 pb-20">
             {products.map((item) => (
                 <div key={item._id} className="bg-white shadow-md rounded-xl overflow-hidden">
 
@@ -53,7 +73,20 @@ export default function PurchaseFeed() {
 
                     {/* Content */}
                     <div className="p-4">
-                        <h2 className="text-xl font-semibold">{item.productName}</h2>
+                        <div className="flex justify-between items-start">
+                            <h2 className="text-xl font-semibold">{item.productName}</h2>
+                            
+                            {/* Delete Button (Visible to owner OR Admin) */}
+                            {(userInformation?._id === item.userId?._id || userInformation?.role === "admin") && (
+                                <button
+                                    onClick={() => handleDelete(item._id)}
+                                    className="text-gray-400 hover:text-red-500 p-2 transition-colors rounded-full hover:bg-red-50"
+                                    title="Delete Product"
+                                >
+                                    <FaTrash size={16} />
+                                </button>
+                            )}
+                        </div>
 
                         <p className="text-gray-600 mt-2">
                             {item.productDescription}
