@@ -10,14 +10,18 @@ export default function AuthUI() {
   const [user, setUser] = useState(null)
   const navigate = useNavigate()
   const {setUserInformation} = useAuth()
+  const [loading, setLoading] = useState(false);
 
-  /* ================= AUTO lOGIN ================= */
+  /* ================= AUTO LOGIN ================= */
   useEffect(() => {
     const fetchUser = async () => {
       try {
         const res = await api.get("/auth/me");
         setUser(res.data.user);
-        // console.log(user)
+        if (res.data.user) {
+          setUserInformation(res.data.user);
+          navigate("/home");
+        }
       } catch {
         setUser(null);
       }
@@ -36,118 +40,77 @@ export default function AuthUI() {
 
   const handleLoginSubmit = async (e) => {
     e.preventDefault()
+    setLoading(true);
     try {
-      const res = await api.post(`/auth/${mode}`, loginDetails)
+      const res = await api.post(`/auth/login`, loginDetails)
       setUserInformation(res.data.user)
-      if (res.status === 200 || user) {
-        toast.success("Welcome back!");
-        return navigate("/home")
-      }
+      toast.success("Welcome back!");
+      navigate("/home")
     } catch (err) {
-      console.log( "this is login error", err.response?.data)
+      console.log("Login err", err.response?.data)
       toast.error(err.response?.data?.message || "Failed to login");
+    } finally {
+      setLoading(false);
     }
   }
-
-
 
   /* ================= SIGNUP ================= */
   const [loginUsername, setLoginUsername] = useState("")
   const [loginEmail, setLoginEmail] = useState("")
   const [loginPassword, setLoginPassword] = useState("")
-  const [loginImage, setLoginImage] = useState(null); // for preview only
-  const [message, setMessage] = useState("")
-
+  const [loginImage, setLoginImage] = useState(null);
+  
+  // To display to the user specifically for local mock testing
+  const [displayedOtp, setDisplayedOtp] = useState("");
 
   const handleSignUpSubmit = async (e) => {
     e.preventDefault()
+    setLoading(true);
+
     const userFormData = new FormData()
     userFormData.append("username", loginUsername)
     userFormData.append("email", loginEmail)
     userFormData.append("password", loginPassword)
-    userFormData.append("image", loginImage)
-
-    // console.log(loginImage)
-    // console.log(mode)
+    if (loginImage) {
+      userFormData.append("image", loginImage)
+    }
     
     try {
-      const res = await api.post(`/auth/${mode}`, userFormData)
-      console.log("data sent", res.data)
-      if(res.status === 200){
-        toast.success("OTP sent! Please check your email.");
-        setMode("verify-otp")
-        setMessage("")
+      const res = await api.post(`/auth/signup`, userFormData)
+      if (res.status === 200) {
+        setDisplayedOtp(res.data.otp);
+        toast.success(`Signup successful! Your OTP is ${res.data.otp}`, { duration: 5000 });
+        setMode("verify-otp");
       }
     } catch (err) {
-      console.log(err.response?.data, "this is signup error")
-      const errorMessage = err.response?.data.message || "Signup failed";
-      setMessage(errorMessage);
+      const errorMessage = err.response?.data?.message || "Signup failed";
       toast.error(errorMessage);
+    } finally {
+      setLoading(false);
     }
   }
 
-  /* ================= OTP ================= */
+  /* ================= OTP VERIFY (Mock) ================= */
   const [userOtp, setUserOtp] = useState('')
-  const [timer, setTimer] = useState(60);
 
-
-  // Timer countdown
-  useEffect(() => {
-    if (timer > 0) {
-      const interval = setInterval(() => {
-        setTimer(prev => prev - 1);
-      }, 1000);
-      return () => clearInterval(interval);
-    } else {
-      setCanResend(true); // enable resend button
-    }
-  }, [timer]);
-
-
-  // verify otp
-  const verifyOtp = async (e) => {
+  const handleVerifyOtp = async (e) => {
     e.preventDefault()
+    setLoading(true);
     const otpFormData = {
       otp: userOtp,
       email: loginEmail
     }
 
-    console.log(loginEmail, userOtp)
     try {
       const res = await api.post("/auth/verify-otp", otpFormData)
-      console.log(res)
-      console.log(res.status)
       setUserInformation(res.data.user)
-      if (res.status === 200) {
-        toast.success("Account verified successfully! Welcome.");
-        return navigate("/home")
-      }
-
+      toast.success("Account verified successfully! Welcome.");
+      navigate("/home")
     } catch (err) {
-      console.log(err.response?.data, "message : error 2")
       toast.error(err.response?.data?.message || "Invalid OTP or verification failed");
+    } finally {
+      setLoading(false);
     }
-
-  }
-
-
-  /* ================= resend otp ================ */
-
-  const [canResend, setCanResend] = useState(false)
-  const handelResendOtp = async (e) => {
-    e.preventDefault()
-    console.log(loginEmail)
-    if (!canResend) return
-    try {
-      const res = await api.post("/auth/resend-otp", { email: loginEmail })
-      console.log(res)
-      toast.success(res.data.message || "New OTP sent to your email.");
-    } catch (err) {
-      console.log(err.response?.data)
-      toast.error(err.response?.data?.message || "Failed to resend OTP");
-    }
-    setCanResend(false) // disable resend button
-    setTimer(60) // reset timer 
   }
 
   /* ================= FORGOT PASSWORD ================= */
@@ -157,17 +120,21 @@ export default function AuthUI() {
 
   const handleForgotPasswordSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
     try {
       const res = await api.post("/auth/forget-password", { email: resetEmail });
-      toast.success(res.data.message || "OTP sent to your email");
+      toast.success(res.data.message || "OTP generated successfully");
       setMode("reset-password");
     } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to send OTP");
+      toast.error(err.response?.data?.message || "Failed to send request");
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleResetPasswordSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
     try {
       const res = await api.post("/auth/reset-password", { 
         email: resetEmail, 
@@ -178,16 +145,15 @@ export default function AuthUI() {
       setMode("login");
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to reset password");
+    } finally {
+      setLoading(false);
     }
   };
 
-
-  
   return (
     <div className="h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600">
 
       <div className="bg-white w-[350px] p-6 rounded-2xl shadow-xl">
-
         <h1 className="text-2xl font-bold text-center text-indigo-600 mb-4">
           UniSync
         </h1>
@@ -195,12 +161,14 @@ export default function AuthUI() {
         {/* ================= LOGIN ================= */}
         {mode === "login" && (
           <form onSubmit={handleLoginSubmit}>
-            <div className="space-y-3">
+            <div className="space-y-4">
+              <p className="text-sm text-center text-gray-600">Login with Details</p>
+              
               <input
                 type="email"
                 name="email"
                 required
-                placeholder="Email or Username"
+                placeholder="Email Address"
                 value={loginDetails.email}
                 onChange={handleLoginChange}
                 className="w-full border p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400"
@@ -216,8 +184,12 @@ export default function AuthUI() {
                 className="w-full border p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400"
               />
 
-              <button type="submit" className="w-full bg-indigo-500 text-white py-2 rounded-lg hover:bg-indigo-600 transition active:scale-95">
-                Login
+              <button 
+                type="submit" 
+                disabled={loading}
+                className="w-full bg-indigo-500 text-white py-2 rounded-lg hover:bg-indigo-600 transition active:scale-95 disabled:bg-indigo-300"
+              >
+                {loading ? "Logging in..." : "Login"}
               </button>
 
               <div className="flex justify-between items-center px-1">
@@ -243,20 +215,18 @@ export default function AuthUI() {
 
         {/* ================= SIGNUP ================= */}
         {mode === "signup" && (
-          <form onSubmit={(e) => {
-            handleSignUpSubmit(e)
-          }}>
+          <form onSubmit={handleSignUpSubmit}>
             <div className="space-y-3">
+              <p className="text-sm text-center text-gray-600">Create your account</p>
+              
               <input
                 type="email"
-                placeholder="Email"
+                placeholder="Email Address"
                 name="email"
                 required
                 value={loginEmail}
-                onChange={(e) => {
-                  setLoginEmail(e.target.value)
-                }}
-                className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-indigo-400"
+                onChange={(e) => setLoginEmail(e.target.value)}
+                className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-indigo-400 focus:outline-none"
               />
 
               <input
@@ -265,11 +235,8 @@ export default function AuthUI() {
                 name="username"
                 required
                 value={loginUsername}
-                onChange={(e) => {
-                  setLoginUsername(e.target.value)
-                  setTimer(60);
-                }}
-                className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-indigo-400"
+                onChange={(e) => setLoginUsername(e.target.value)}
+                className="w-full border p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400"
               />
 
               <input
@@ -278,49 +245,46 @@ export default function AuthUI() {
                 name="password"
                 required
                 value={loginPassword}
-                onChange={(e) => {
-                  setLoginPassword(e.target.value)
-                }}
-                className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-indigo-400"
+                onChange={(e) => setLoginPassword(e.target.value)}
+                className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-indigo-400 focus:outline-none"
               />
 
               {/* Image Upload */}
-              <input
-                type="file"
-                accept="image/*"
-                className="w-full border p-2 rounded-lg cursor-pointer"
-                onChange={(e) => setLoginImage(e.target.files[0])}
-              />
+              <div className="space-y-1">
+                <label className="text-xs text-gray-500">Profile Image</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setLoginImage(e.target.files[0])}
+                  className="w-full border p-1 rounded-lg text-xs"
+                />
+              </div>
 
-              {/* Image Preview */}
-              <div className="flex justify-center">
-                {loginImage ? (
+              {loginImage && (
+                <div className="flex justify-center">
                   <img
                     src={URL.createObjectURL(loginImage)}
                     alt="preview"
-                    className="w-20 h-20 rounded-full object-cover border"
+                    className="w-16 h-16 rounded-full object-cover border"
                   />
-                ) : (
-                  <div className="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center text-sm text-gray-500">
-                    Preview
-                  </div>
-                )}
-              </div>
+                </div>
+              )}
 
               <button
-                className="w-full bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 transition active:scale-95"
-                type="submit active:scale-95"
+                type="submit"
+                disabled={loading}
+                className="w-full bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 transition active:scale-95 disabled:bg-green-300"
               >
-                Sign Up
+                {loading ? "Sending..." : "Sign Up"}
               </button>
 
-              <p className={message==="" ? "text-sm text-center" : "text-sm text-center text-red-700-600"}>
-                {message ==="" ? "Already have an account?" : message}
+              <p className="text-sm text-center">
+                Already have an account?{" "}
                 <span
-                  className={message==="" ? "text-indigo-600 cursor-pointer" : "text-green-600 cursor-pointer"}
+                  className="text-indigo-600 cursor-pointer font-medium"
                   onClick={() => setMode("login")}
                 >
-                  {message==="" ? "Login" : ""}
+                  Login
                 </span>
               </p>
             </div>
@@ -332,7 +296,7 @@ export default function AuthUI() {
           <form onSubmit={handleForgotPasswordSubmit}>
             <div className="space-y-4">
               <p className="text-sm text-center text-gray-600">
-                Enter your registered email to receive a reset OTP.
+                Enter your registered email to request a reset block.
               </p>
               <input
                 type="email"
@@ -342,8 +306,8 @@ export default function AuthUI() {
                 onChange={(e) => setResetEmail(e.target.value)}
                 className="w-full border p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400"
               />
-              <button type="submit" className="w-full bg-indigo-500 text-white py-2 rounded-lg hover:bg-indigo-600 transition">
-                Send OTP
+              <button type="submit" disabled={loading} className="w-full bg-indigo-500 text-white py-2 rounded-lg hover:bg-indigo-600 transition disabled:bg-indigo-300">
+                Send Request
               </button>
               <button 
                 type="button" 
@@ -361,7 +325,7 @@ export default function AuthUI() {
           <form onSubmit={handleResetPasswordSubmit}>
             <div className="space-y-3">
               <p className="text-sm text-center text-gray-600">
-                Enter the OTP sent to <b>{resetEmail}</b> and your new password.
+                Enter the code to reset your password.
               </p>
               <input
                 type="text"
@@ -379,7 +343,7 @@ export default function AuthUI() {
                 onChange={(e) => setNewPassword(e.target.value)}
                 className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-indigo-400"
               />
-              <button type="submit" className="w-full bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 transition">
+              <button type="submit" disabled={loading} className="w-full bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 transition disabled:bg-green-300">
                 Reset Password
               </button>
               <button 
@@ -387,63 +351,50 @@ export default function AuthUI() {
                 onClick={() => setMode("forgot-password")}
                 className="w-full text-sm text-gray-500 hover:text-gray-700 font-medium"
               >
-                ⬅ Resend OTP
+                ⬅ Resend Request
               </button>
             </div>
           </form>
         )}
 
-        {/* ================= OTP ================= */}
+        {/* ================= VERIFY OTP ================= */}
         {mode === "verify-otp" && (
-          <form onSubmit={(e) => verifyOtp(e)}>
-            <div className="space-y-3 text-center">
+          <form onSubmit={handleVerifyOtp}>
+            <div className="space-y-4 text-center">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-sm text-blue-800">
+                  For your local testing, your verification code is:
+                </p>
+                <p className="text-2xl font-bold tracking-[0.2em] text-blue-600 mt-1">
+                  {displayedOtp}
+                </p>
+              </div>
+
               <p className="text-sm text-gray-600">
-                Enter OTP sent to your email
+                Please type the code below to verify your account
               </p>
 
               <input
                 type="text"
-                name="otp"
                 required
+                maxLength={6}
                 value={userOtp}
-                onChange={(e) => setUserOtp(e.target.value)}
-                placeholder="Enter OTP"
-                className="w-full border p-2 rounded-lg text-center tracking-widest focus:ring-2 focus:ring-indigo-400"
+                onChange={(e) => setUserOtp(e.target.value.replace(/\D/g, ""))}
+                placeholder="000000"
+                className="w-full border p-3 rounded-lg text-center text-2xl tracking-[1em] focus:ring-2 focus:ring-indigo-400 focus:outline-none"
               />
 
               <button
                 type="submit"
-                className="w-full bg-orange-500 text-white py-2 rounded-lg hover:bg-orange-600 transition"
+                disabled={loading}
+                className="w-full bg-orange-500 text-white py-2 rounded-lg hover:bg-orange-600 transition active:scale-95 disabled:bg-orange-300"
               >
-                Verify OTP
+                {loading ? "Verifying..." : "Verify & Continue"}
               </button>
 
-              {/* Timer */}
-              <p className="text-gray-500 text-sm">
-                ⏳ Resend OTP in {timer}s
-              </p>
-
-              {/* Resend OTP button */}
               <button
                 type="button"
-                onClick={(e) => {
-                  handelResendOtp(e)
-
-                }}
-                disabled={!canResend}
-                className={`w-full py-2 rounded-lg transition ${canResend
-                  ? "bg-blue-500 text-white hover:bg-blue-600 active:scale-95"
-                  : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                  }`}
-
-              >
-                🔁 Resend OTP
-              </button>
-
-              {/* Back Button */}
-              <button
-                type="button"
-                className="w-full bg-gray-200 py-2 rounded-lg hover:bg-gray-300 transition active:scale-95"
+                className="w-full text-sm text-gray-500 hover:text-indigo-600"
                 onClick={() => setMode("signup")}
               >
                 ⬅ Back to Signup
@@ -451,9 +402,7 @@ export default function AuthUI() {
             </div>
           </form>
         )}
-
       </div>
     </div>
   );
 }
-

@@ -50,20 +50,11 @@ const signup = async (req, res) => {
     });
     console.log("✅ User saved successfully:", newUser.email, "OTP:", newUser.otp);
 
-    const emailResult = await sendMail(email, "OTP Verification", `Your OTP is ${otp}`);
-
-    if (!emailResult.success) {
-      return res.status(500).json({ 
-        message: "User created, but failed to send verification email. Please check your SMTP settings.",
-        error: emailResult.error 
-      });
-    }
-
     res.json({
-      message: "OTP sent to email",
+      message: "OTP generated successfully",
       username,
       email,
-      password
+      otp, // Returning OTP for local mock testing
     });
   } catch (err) {
     console.error("Signup Error:", err.message);
@@ -119,8 +110,8 @@ const login = async (req, res) => {
 
     res.cookie("token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      secure: true, //process.env.NODE_ENV === "production",
+      sameSite: 'none',//process.env.NODE_ENV === "production" ? "none" : "lax",
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
@@ -143,7 +134,15 @@ const resendOtp = async (req, res) => {
     user.otpExpiry = Date.now() + 10 * 60 * 1000;
     await user.save();
 
-    const emailResult = await sendMail(email, "Resent OTP", `Your OTP is ${otp}`);
+    const emailResult = await sendMail({
+      to: email,
+      subject: "Account Verification OTP",
+      text: `Your OTP is ${otp}`,
+    });
+
+    if (!emailResult.success) {
+      return res.status(500).json({ message: "Failed to resend OTP email.", error: emailResult.error });
+    };
 
     if (!emailResult.success) {
       return res.status(500).json({ message: "Failed to resend OTP email.", error: emailResult.error });
@@ -167,7 +166,11 @@ const forgetPassword = async (req, res) => {
     user.otpExpiry = Date.now() + 10 * 60 * 1000;
     await user.save();
 
-    await sendMail(email, "Reset Password OTP", `Your OTP to reset password is ${otp}`);
+    await sendMail({
+      to: email,
+      subject: "Password Reset OTP",
+      text: `Your OTP is ${otp}`,
+    });
     res.json({ message: "OTP sent for password reset" });
   } catch (err) {
     res.status(500).json({ message: "Forget password failed", error: err.message });
@@ -215,4 +218,14 @@ const logout = async (req, res) => {
   res.json({ message: "Logout successful" });
 };
 
-module.exports = { signup, verifyOtp, login, resendOtp, forgetPassword, resetPassword, getMe, logout };
+
+module.exports = { 
+  signup, 
+  verifyOtp, 
+  login, 
+  resendOtp, 
+  forgetPassword, 
+  resetPassword, 
+  getMe, 
+  logout
+};
