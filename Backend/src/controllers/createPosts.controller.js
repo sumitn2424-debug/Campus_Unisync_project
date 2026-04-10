@@ -7,7 +7,7 @@ const createPost = async(req, res) => {
     const decoded = req.user; // Get user info from auth middleware
     // console.log(req.user)
     // console.log("Decoded user from middleware:", req.user);
-    if(!decoded.isVerified){
+    if(decoded.isVerified === false){
         return res.status(400).json({message:"Please verify your email first"})
     }
     try{
