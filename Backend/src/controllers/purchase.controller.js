@@ -6,7 +6,7 @@ const createPurchase = async (req, res) => {
     const decoded = req.user;
     console.log("Decoded user from middleware:", req.user);
 
-    if (!decoded.isVerified) {
+    if (decoded.isVerified === false) {
         return res.status(400).json({ message: "Please verify your email first" });
     }
 
@@ -35,7 +35,7 @@ const createPurchase = async (req, res) => {
         }
 
         const newPurchase = new purchaseModel({
-            userId: decoded._id,
+            userId: decoded._id || decoded.id,
             productName,
             productDescription,
             price: parsedPrice,
@@ -92,7 +92,7 @@ const showPurchase = async (req, res) => {
 const deletePurchase = async (req, res) => {
     try {
         const { id } = req.params;
-        const currentUserId = req.user._id;
+        const currentUserId = req.user._id || req.user.id;
 
         const purchase = await purchaseModel.findById(id);
 
