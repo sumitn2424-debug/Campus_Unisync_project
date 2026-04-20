@@ -11,6 +11,8 @@ import CreateProductPost from "../pages/CreateProductPost";
 import NotFound from "../pages/NotFound";
 import AdminPanel from "../pages/AdminPanel";
 import AdminRoute from "../components/AdminRoute";
+import ApprovalStatus from "../pages/ApprovalStatus";
+import ProfileSetup from "../pages/ProfileSetup";
 
 export const AppRoutes = () => {
     return (
@@ -24,12 +26,28 @@ export const AppRoutes = () => {
                 <Route path="/admin" element={<AdminPanel />} />
             </Route>
 
+            <Route path="/waiting-approval" element={
+                <ProtectedRoutes>
+                    <ApprovalStatus />
+                </ProtectedRoutes>
+            } />
+            <Route path="/setup-profile" element={
+                <ProtectedRoutes>
+                    <ProfileSetup />
+                </ProtectedRoutes>
+            } />
+
             <Route path="/home" element={
                 <ProtectedRoutes>
                     <Home />
                 </ProtectedRoutes>
             } />
             <Route path="/Profile" element={
+                <ProtectedRoutes>
+                    <Profile />
+                </ProtectedRoutes>
+            } />
+            <Route path="/Profile/:id" element={
                 <ProtectedRoutes>
                     <Profile />
                 </ProtectedRoutes>

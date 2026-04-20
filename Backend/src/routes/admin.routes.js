@@ -1,7 +1,7 @@
 // src/routes/admin.routes.js
 const express = require("express");
 const router = express.Router();
-const { getAllUsers, deleteUser, getStats } = require("../controllers/admin.controller");
+const { getAllUsers, deleteUser, getStats, approveUser, rejectUser } = require("../controllers/admin.controller");
 const authUser = require("../middleware/authData.middleware");
 const isAdmin = require("../middleware/admin.middleware");
 
@@ -11,6 +11,8 @@ router.use(isAdmin);
 
 router.get("/users", getAllUsers);
 router.get("/stats", getStats);
+router.patch("/approve/:id", approveUser);
+router.patch("/reject/:id", rejectUser);
 router.delete("/user/:id", deleteUser);
 
 module.exports = router;

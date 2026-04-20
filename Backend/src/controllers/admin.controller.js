@@ -57,8 +57,38 @@ const getStats = async (req, res) => {
     }
 };
 
+// ✅ Approve user
+const approveUser = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const user = await UserModel.findByIdAndUpdate(id, { status: "approved" }, { new: true });
+        if (!user) {
+            return res.status(404).json({ message: "User not found." });
+        }
+        res.status(200).json({ message: "User approved successfully.", user });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+// ✅ Reject user
+const rejectUser = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const user = await UserModel.findByIdAndUpdate(id, { status: "rejected" }, { new: true });
+        if (!user) {
+            return res.status(404).json({ message: "User not found." });
+        }
+        res.status(200).json({ message: "User rejected successfully.", user });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
 module.exports = {
     getAllUsers,
     deleteUser,
-    getStats
+    getStats,
+    approveUser,
+    rejectUser
 };

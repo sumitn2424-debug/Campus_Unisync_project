@@ -5,28 +5,51 @@ import PostCard from "../components/PostCard";
 import MyProductCard from "../components/MyProductCard";
 import Loader from "../components/Loader";
 import { FaShieldAlt } from "react-icons/fa";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import PostProvider from "../context/PostContext";
 
 export default function Profile() {
   const navigate = useNavigate();
+  const { id } = useParams();
   const { userInformation, logOut } = useAuth();
+  
+  const [profileUser, setProfileUser] = useState(null);
+  const [profileError, setProfileError] = useState(null);
   const [posts, setPosts] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const targetUserId = id || userInformation?._id;
+  const isOwnProfile = !id || id === userInformation?._id;
+
   useEffect(() => {
-    if (!userInformation?._id) return;
+    if (!id && userInformation) {
+       setProfileUser(userInformation);
+       return;
+    }
+    if (id) {
+       setProfileError(null);
+       api.get(`/auth/user/${id}`)
+         .then(res => setProfileUser(res.data.user))
+         .catch(err => {
+            console.error("Failed to fetch user profile", err);
+            setProfileError("Could not load this profile. They might not exist.");
+         });
+    }
+  }, [id, userInformation]);
+
+  useEffect(() => {
+    if (!targetUserId) return;
 
     const fetchData = async () => {
       try {
         setLoading(true);
         // Fetch regular posts
-        const postsRes = await api.get(`/data/fetchPosts?userId=${userInformation._id}&limit=50`);
+        const postsRes = await api.get(`/data/fetchPosts?userId=${targetUserId}&limit=50`);
         setPosts(postsRes.data);
 
         // Fetch product posts
-        const productsRes = await api.get(`/purchase/products?userId=${userInformation._id}`);
+        const productsRes = await api.get(`/purchase/products?userId=${targetUserId}`);
         setProducts(productsRes.data.data);
       } catch (err) {
         console.error("Failed to fetch user profile data:", err);
@@ -36,43 +59,77 @@ export default function Profile() {
     };
 
     fetchData();
-  }, [userInformation]);
+  }, [targetUserId]);
 
-  if (!userInformation) return <Loader />;
+  if (profileError) {
+    return (
+      <div className="max-w-xl mx-auto mt-10 p-6 bg-white rounded-xl shadow-sm text-center">
+        <h2 className="text-xl font-bold text-gray-800 mb-2">Profile Not Found</h2>
+        <p className="text-gray-500 mb-4">{profileError}</p>
+        <button 
+          onClick={() => navigate('/home')} 
+          className="bg-indigo-600 text-white px-4 py-2 rounded-lg"
+        >
+          Go Back Home
+        </button>
+      </div>
+    );
+  }
+
+  if (!profileUser) return <Loader />;
 
   return (
     <div className="max-w-2xl mx-auto p-4 pb-24">
       {/* Profile Header */}
       <div className="bg-white rounded-xl shadow-md p-6 mb-8 flex flex-col sm:flex-row items-center gap-6">
         <img 
-          src={userInformation.image || "https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png"} 
+          src={profileUser.image || "https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png"} 
           alt="Profile" 
           className="w-24 h-24 rounded-full object-cover border-4 border-indigo-100 shadow-sm"
         />
         <div className="text-center sm:text-left flex-1">
-          <h1 className="text-3xl font-bold text-gray-800 tracking-tight">{userInformation.username}</h1>
-          <p className="text-gray-500 mb-4">{userInformation.email}</p>
+          <h1 className="text-3xl font-bold text-gray-800 tracking-tight">{profileUser.username}</h1>
+          <p className="text-gray-500 mb-2">{profileUser.email}</p>
+          
+          {(profileUser.semester || profileUser.specialization) && (
+            <div className="flex flex-wrap justify-center sm:justify-start gap-2 mb-4">
+              {profileUser.semester && (
+                <span className="bg-blue-50 text-blue-600 text-xs font-bold px-2.5 py-1 rounded-md border border-blue-100">
+                  {profileUser.semester}
+                </span>
+              )}
+              {profileUser.specialization && (
+                <span className="bg-purple-50 text-purple-600 text-xs font-bold px-2.5 py-1 rounded-md border border-purple-100">
+                  {profileUser.specialization}
+                </span>
+              )}
+            </div>
+          )}
+
           <div className="flex justify-center sm:justify-start gap-4 text-sm font-medium">
              <div className="text-gray-600"><span className="text-gray-900 font-bold">{posts.length}</span> Posts</div>
              <div className="text-gray-600"><span className="text-gray-900 font-bold">{products.length}</span> Products</div>
           </div>
         </div>
-        <div className="flex flex-col gap-2">
-          {userInformation?.role === "admin" && (
+        
+        {isOwnProfile && (
+          <div className="flex flex-col gap-2">
+            {userInformation?.role === "admin" && (
+              <button 
+                onClick={() => navigate("/admin")}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-6 rounded-lg transition-all shadow-sm active:scale-95 flex items-center justify-center gap-2"
+              >
+                <FaShieldAlt /> Admin Panel
+              </button>
+            )}
             <button 
-              onClick={() => navigate("/admin")}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-6 rounded-lg transition-all shadow-sm active:scale-95 flex items-center justify-center gap-2"
+              onClick={logOut}
+              className="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-6 rounded-lg transition-all shadow-sm active:scale-95"
             >
-              <FaShieldAlt /> Admin Panel
+              Logout
             </button>
-          )}
-          <button 
-            onClick={logOut}
-            className="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-6 rounded-lg transition-all shadow-sm active:scale-95"
-          >
-            Logout
-          </button>
-        </div>
+          </div>
+        )}
       </div>
 
       <div className="space-y-8">

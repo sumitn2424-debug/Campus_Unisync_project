@@ -97,7 +97,13 @@ export default function PurchaseFeed() {
                         </p>
 
                         <div className="mt-3 text-sm text-gray-500">
-                            Posted by: {item.userId?.username}
+                            Posted by:{" "}
+                            <span 
+                              className="font-semibold text-indigo-600 cursor-pointer hover:underline"
+                              onClick={() => item.userId?._id && navigate(`/Profile/${item.userId._id}`)}
+                            >
+                              {item.userId?.username}
+                            </span>
                         </div>
 
                         {/* ✅ Chat Button */}

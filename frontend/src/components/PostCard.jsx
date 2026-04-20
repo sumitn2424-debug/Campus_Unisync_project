@@ -60,7 +60,10 @@ export default function PostCard({ post, onDelete }) {
     <div className="bg-white rounded-xl shadow mb-6 w-full max-w-xl mx-auto overflow-hidden">
       {/* Profile section */}
       <div className="flex items-center justify-between p-3">
-        <div className="flex items-center">
+        <div 
+          className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
+          onClick={() => navigate(`/Profile/${post.userId?._id}`)}
+        >
           <div className="w-12 h-12 rounded-full flex-shrink-0 border border-gray-200">
             <img
               src={post.userId?.image || "https://via.placeholder.com/150"}
@@ -68,7 +71,7 @@ export default function PostCard({ post, onDelete }) {
               className="w-full h-full object-cover rounded-full"
             />
           </div>
-          <div className="ml-3 font-semibold text-gray-800">
+          <div className="ml-3 font-semibold text-gray-800 hover:underline">
             {post.userId?.username || "Unknown User"}
           </div>
         </div>

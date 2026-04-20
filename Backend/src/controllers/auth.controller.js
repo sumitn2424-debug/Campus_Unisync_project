@@ -208,6 +208,50 @@ const getMe = async (req, res) => {
   }
 };
 
+// GET STATUS
+const getStatus = async (req, res) => {
+  try {
+    const user = await userModel.findById(req.user.id).select("status");
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.json({ status: user.status });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch status", error: err.message });
+  }
+};
+
+// COMPLETE PROFILE
+const completeProfile = async (req, res) => {
+  try {
+    const { semester, specialization } = req.body;
+    if (!semester || !specialization) {
+      return res.status(400).json({ message: "Semester and Specialization are required." });
+    }
+
+    const user = await userModel.findByIdAndUpdate(
+      req.user.id,
+      { semester, specialization, isProfileComplete: true },
+      { new: true }
+    ).select("-password");
+
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.json({ message: "Profile setup complete", user });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to complete profile setup", error: err.message });
+  }
+};
+
+// GET USER BY ID (Public Profile)
+const getUserById = async (req, res) => {
+  try {
+    const user = await userModel.findById(req.params.id)
+      .select("username email image role semester specialization isProfileComplete");
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.json({ user });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch user profile", error: err.message });
+  }
+};
+
 // LOGOUT
 const logout = async (req, res) => {
   res.clearCookie("token", {
@@ -227,5 +271,8 @@ module.exports = {
   forgetPassword, 
   resetPassword, 
   getMe, 
+  getStatus,
+  completeProfile,
+  getUserById,
   logout
 };

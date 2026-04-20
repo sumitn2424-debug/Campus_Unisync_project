@@ -22,7 +22,15 @@ const userSchema = new mongoose.Schema({
         type: String,
         enum: ["user", "admin"],
         default: "user"
-    }
+    },
+    status: {
+        type: String,
+        enum: ["pending", "approved", "rejected"],
+        default: "pending"
+    },
+    semester: { type: String },
+    specialization: { type: String },
+    isProfileComplete: { type: Boolean, default: false }
 
 });
 
