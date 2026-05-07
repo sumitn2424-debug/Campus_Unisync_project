@@ -2,7 +2,7 @@ import PurchaseFeed from "../components/PurchaseFeed";
 
 export default function Marketplace() {
   return (
-    <div className="p-3 grid grid-cols-2 gap-3">
+    <div className="p-3 bg-gray-100 min-h-screen">
      <PurchaseFeed />
     </div>
   );

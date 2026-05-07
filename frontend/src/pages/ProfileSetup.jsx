@@ -16,19 +16,21 @@ export default function ProfileSetup() {
 
   const semesters = [
     "Semester 1", "Semester 2", "Semester 3", "Semester 4",
-    "Semester 5", "Semester 6", "Semester 7", "Semester 8",
-    "Year 1", "Year 2", "Year 3", "Year 4"
+    "Semester 5", "Semester 6","other"
   ];
 
   const specializations = [
     "Computer Science",
-    "Information Technology",
-    "Business Administration",
-    "Design",
-    "Engineering",
-    "Arts & Humanities",
-    "Mathematics & Science",
-    "Other"
+    "Mechanical Engineering",
+    "Automobile Engineering",
+    "Electrical Engineering",
+    "3D Printing & Design",
+    "CNC Long Term Course",
+    "CNC Short Term Course",
+    "PLC Course", 
+    "Solar Technology",
+    "AutoTronics", 
+    "Graphics And Web Desiginig"
   ];
 
   const handleChange = (e) => {
